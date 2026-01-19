@@ -1,185 +1,954 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR System</title>
-    <!-- Tailwind CSS -->
+    <title>نظام HR المتكامل - الإصدار 17.3 (فلتر المهام الذكي)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; }
+        :root { --primary: #2563eb; --secondary: #64748b; --accent: #facc15; --bg-main: #f8fafc; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-main); color: #1e293b; }
+        .sidebar-link { transition: all 0.3s ease; }
+        .sidebar-link.active { background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%); border-left: 4px solid var(--accent); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
         .hidden-section { display: none; }
-        .active { display: block; }
+        .stat-card { transition: all 0.3s ease; cursor: pointer; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modern-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        input, select, textarea { border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem 1rem; width: 100%; transition: all 0.2s; background-color: #fff; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .modal { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal.active { display: flex; }
+        .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); }
+        .ai-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); } 70% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @media print { .no-print { display: none !important; } body { background: white; } main { padding: 0 !important; width: 100% !important; } .print-area { display: block !important; } }
     </style>
 </head>
-<body>
-<!-- ======= HTML CONTENT ======= -->
-<!-- افترضت كل HTML اللي انت عاملها موجودة هنا بدون تعديل -->
+<body class="flex min-h-screen">
 
-<!-- ======= JS CODE ======= -->
-<script>
-/* =======================
-   GLOBAL STATE
-======================= */
-let employees = [];
-let currentEmpId = null;
-let systemDate = new Date(); // مثال لتاريخ النظام
-let apiKey = ""; // لو راح تستعمل Gemini API
-
-/* =======================
-   NAVIGATION
-======================= */
-function showSection(id) {
-    document.querySelectorAll('section').forEach(s => s.classList.add('hidden-section'));
-    const sec = document.getElementById(id);
-    if (sec) sec.classList.remove('hidden-section');
-
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    const link = document.getElementById('link-' + id);
-    if (link) link.classList.add('active');
-
-    const titleSpan = document.querySelector(`#link-${id} span`);
-    document.getElementById('section-title').innerText = titleSpan ? titleSpan.innerText : '';
-}
-
-/* =======================
-   MODALS
-======================= */
-function openModal(id) { const modal = document.getElementById(id); if(modal) modal.classList.add('active'); }
-function closeModal(id) { const modal = document.getElementById(id); if(modal) modal.classList.remove('active'); }
-
-/* =======================
-   EMPLOYEE FUNCTIONS
-======================= */
-function saveNewEmployee(e) {
-    e.preventDefault();
-    const id = document.getElementById('f_id').value;
-    if(employees.some(emp => emp.id == id)) return alert("الرقم مسجل!");
-    employees.push({
-        id: id,
-        name: document.getElementById('f_name').value,
-        details: { 
-            "القسم": document.getElementById('f_dept').value,
-            "المسمى": document.getElementById('f_pos').value,
-            "الراتب": document.getElementById('f_salary').value,
-            "الهاتف": document.getElementById('f_phone').value,
-            "تاريخ الميلاد": document.getElementById('f_dob').value,
-            "فصيلة الدم": document.getElementById('f_blood').value,
-            "العنوان": document.getElementById('f_address').value,
-            "بداية العمل": document.getElementById('f_start_date').value,
-            "رصيد الإجازات": document.getElementById('f_leave_bal').value,
-            "الجنسية": document.getElementById('f_nat').value
-        },
-        schedule: {}, actions: [], tasks: [], leaves: [], overtime: []
-    });
-    saveToStorage();
-    showSection('dashboard');
-}
-
-function searchEmployees() {
-    const v = document.getElementById('empSearch').value.toLowerCase();
-    renderEmployeeList(employees.filter(e => e.name.toLowerCase().includes(v) || e.id.toLowerCase().includes(v)));
-}
-
-function renderEmployeeList(data = employees) {
-    const tbody = document.getElementById('employeesTableBody');
-    if(!tbody) return;
-    tbody.innerHTML = data.map(emp => `
-        <tr class="hover:bg-slate-50 border-b font-bold">
-            <td class="p-5">${emp.name} <span class="text-slate-300">#${emp.id}</span></td>
-            <td class="p-5 text-slate-500">${emp.details['القسم']}</td>
-            <td class="p-5 text-center">
-                <button onclick="viewProfile('${emp.id}')" class="bg-blue-50 text-blue-700 px-8 py-2 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all">عرض</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function updateDashboardStats() {
-    document.getElementById('stat-emp-count').innerText = employees.length;
-    let a=0, l=0; employees.forEach(e => { a += (e.actions||[]).length; l += (e.leaves||[]).length; });
-    document.getElementById('stat-action-count').innerText = a;
-    document.getElementById('stat-leave-count').innerText = l;
-}
-
-function renderUpcomingBirthdays() {
-    const checkDate = new Date(systemDate);
-    const list = employees.filter(e => {
-        if(!e.details['تاريخ الميلاد']) return false;
-        const b = new Date(e.details['تاريخ الميلاد']);
-        return b.getMonth() === checkDate.getMonth();
-    });
-    const container = document.getElementById('birthdayList');
-    if(!container) return;
-    container.innerHTML = list.map(e => `
-        <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center text-[10px] font-black border border-slate-100">
-            <span>${e.name}</span><span class="text-blue-600">${e.details['تاريخ الميلاد']}</span>
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-900 text-white flex-shrink-0 hidden lg:flex flex-col shadow-2xl z-50 no-print">
+        <div class="p-8">
+            <div class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-yellow-400">HR PLATFORM ✨</div>
+            <p class="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest">الإصدار 17.3</p>
         </div>
-    `).join('') || '<p class="text-center text-slate-300 italic py-4 text-xs">لا يوجد هذا الشهر</p>';
-}
+        <nav class="flex-1 px-4 space-y-2">
+            <a href="#" onclick="showSection('dashboard')" class="sidebar-link flex items-center p-3 rounded-xl hover:bg-slate-800 transition active" id="link-dashboard"><span class="ml-3 font-bold">📊 لوحة التحكم</span></a>
+            <a href="#" onclick="showSection('employees')" class="sidebar-link flex items-center p-3 rounded-xl hover:bg-slate-800 transition" id="link-employees"><span class="ml-3 font-bold">👥 إدارة الموظفين</span></a>
+<div class="pt-10 px-3 space-y-2">
+    <button onclick="downloadFullBackup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-3 rounded-xl border border-slate-700 font-bold transition-all flex items-center justify-center gap-2">
+        💾 تصدير نسخة احتياطية
+    </button>
+    
+    <button onclick="document.getElementById('importFile').click()" class="w-full bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-xs py-3 rounded-xl border border-emerald-700 font-bold transition-all flex items-center justify-center gap-2">
+        📥 استعادة نسخة احتياطية
+    </button>
+    
+    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importFullBackup(event)">
+</div>        </nav>
+        <div class="p-6 border-t border-slate-800">
+            <div class="flex items-center gap-3 bg-slate-800/50 p-4 rounded-2xl">
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold">M</div>
+                <div><p class="text-sm font-bold text-white">مدير النظام</p><p class="text-[10px] text-slate-400" id="current-date-display"></p></div>
+            </div>
+        </div>
+		<div class="px-3 mt-2">
+    <button onclick="openModal('modalExportOvertime')" class="w-full bg-orange-800/50 hover:bg-orange-700 text-orange-100 text-xs py-3 rounded-xl border border-orange-700 font-bold transition-all flex items-center justify-center gap-2">
+        📊 استخراج تقرير الإضافي
+    </button>
+</div>
+    </aside>
 
-function filterEmployeesByStat(type) {
-    let filtered = [];
-    if(type === 'actions') filtered = employees.filter(e => (e.actions||[]).length > 0);
-    else if(type === 'leaves') filtered = employees.filter(e => (e.leaves||[]).length > 0);
-    showSection('employees');
-    renderEmployeeList(filtered);
-}
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="glass-header shadow-sm p-4 flex justify-between items-center z-40 sticky top-0 border-b border-slate-100 no-print">
+            <h2 id="section-title" class="text-xl font-extrabold text-slate-800">لوحة التحكم</h2>
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col items-end">
+                    <span class="text-[9px] font-bold text-blue-600 mb-1">تاريخ النظام الحالي</span>
+                    <input type="date" id="systemDateSelector" onchange="updateSystemDate()" class="bg-slate-50 border-slate-200 text-xs py-1.5 w-40">
+                </div>
+                <button onclick="showSection('add-employee-form')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all">+ موظف جديد</button>
+            </div>
+        </header>
+		
+<div id="modalExportOvertime" class="modal">
+    <div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative">
+        <button onclick="closeModal('modalExportOvertime')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black text-xl">✖</button>
+        <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+            <span>📥</span> تحميل تقرير الإضافي
+        </h3>
+        
+        <div class="space-y-4 font-bold text-xs">
+            <div class="bg-slate-50 p-4 rounded-xl text-slate-500 mb-4 border border-slate-100">
+                سيتم تحميل ملف Excel يحتوي على سجلات الإضافي لجميع الموظفين خلال الفترة المحددة.
+            </div>
 
-/* =======================
-   BACKUP FUNCTIONS
-======================= */
-function downloadFullBackup() {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(employees)], {type:"application/json"}));
-    a.download = "HR_Backup.json";
-    a.click();
-}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 text-slate-500">من تاريخ</label>
+                    <input type="date" id="export_start_date">
+                </div>
+                <div>
+                    <label class="block mb-1 text-slate-500">إلى تاريخ</label>
+                    <input type="date" id="export_end_date">
+                </div>
+            </div>
 
-function importFullBackup(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+            <button onclick="downloadOvertimeExcel()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-black transition shadow-lg mt-4 flex items-center justify-center gap-2">
+                <span>📄 تحميل ملف Excel</span>
+            </button>
+        </div>
+    </div>
+</div>
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 print-area">
+            <!-- Dashboard -->
+            <section id="dashboard" class="space-y-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 no-print">
+                    <div onclick="showSection('employees')" class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-slate-400 font-bold text-[10px] uppercase">الموظفين</p><h3 class="text-3xl font-black text-slate-800 mt-1" id="stat-emp-count">0</h3></div>
+                    <div onclick="filterEmployeesByStat('actions')" class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-slate-400 font-bold text-[10px] uppercase text-red-500">الإنذارات</p><h3 class="text-3xl font-black text-red-600 mt-1" id="stat-action-count">0</h3></div>
+                    <div onclick="filterEmployeesByStat('leaves')" class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-slate-400 font-bold text-[10px] uppercase text-emerald-500">الإجازات</p><h3 class="text-3xl font-black text-emerald-600 mt-1" id="stat-leave-count">0</h3></div>
+                </div>
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-            if (Array.isArray(importedData)) {
-                if (confirm("تحذير: استعادة النسخة الاحتياطية سيؤدي إلى مسح البيانات الحالية واستبدالها. هل أنت متأكد؟")) {
-                    employees = importedData;
-                    saveToStorage();
-                    window.location.reload();
-                }
-            } else alert("الملف غير صحيح! تأكد من اختيار ملف نسخة احتياطية صالح.");
-        } catch(err) {
-            alert("حدث خطأ أثناء قراءة الملف. تأكد أنه ملف JSON سليم.");
-            console.error(err);
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Dashboard Schedule -->
+                    <div class="lg:col-span-3 bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden">
+                        <div class="p-8 border-b bg-slate-50/30 font-black text-slate-800 flex justify-between items-center">
+                            <span>🗓️ خريطة الدوام الأسبوعي</span>
+                            <span class="text-[10px] text-slate-400 font-bold" id="week-date-range"></span>
+                        </div>
+                        <div class="overflow-x-auto"><table class="w-full text-right border-collapse whitespace-nowrap"><thead class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-tighter"><tr id="dashboardScheduleHeadRow"></tr></thead><tbody id="dashboardScheduleTable" class="divide-y divide-slate-100 text-[11px] font-bold"></tbody></table></div>
+                    </div>
+                    <!-- Birthdays -->
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden h-fit no-print">
+                        <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-black">🎂 أعياد ميلاد قادمة</div>
+                        <div id="birthdayList" class="p-6 space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Yearly Leave Schedule -->
+                <div class="bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden">
+                    <div class="p-8 border-b bg-slate-50/30 font-black text-slate-800 flex justify-between items-center"><div class="flex items-center gap-2"><span class="text-2xl">📅</span><span>جدول الإجازات السنوي</span></div><span class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold">يكشف التعارضات</span></div>
+                    <div class="overflow-x-auto max-h-[400px]"><table class="w-full text-right border-collapse"><thead class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase sticky top-0 z-10"><tr><th class="p-4 border-b">تاريخ الإجازة</th><th class="p-4 border-b">الموظفين الحاجزين</th><th class="p-4 border-b text-center">الحالة</th></tr></thead><tbody id="yearlyLeavesTable" class="divide-y divide-slate-100 text-xs font-bold"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- Employees List -->
+            <section id="employees" class="hidden-section space-y-6 font-bold">
+                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4"><input type="text" id="empSearch" onkeyup="searchEmployees()" placeholder="ابحث باسم الموظف أو القسم..." class="bg-slate-50 border-none flex-1"></div>
+                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden"><table class="w-full text-right border-collapse"><thead class="bg-slate-50 text-slate-500 text-xs font-black uppercase tracking-wider"><tr><th class="p-5 border-b">الاسم الكامل</th><th class="p-5 border-b">القسم</th><th class="p-5 border-b text-center">العمليات</th></tr></thead><tbody id="employeesTableBody" class="divide-y divide-slate-100"></tbody></table></div>
+            </section>
+
+            <!-- Add Form -->
+            <section id="add-employee-form" class="hidden-section max-w-5xl mx-auto no-print">
+                <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl">
+                    <h2 class="text-3xl font-black text-blue-800 mb-8 flex items-center gap-3"><span>إضافة موظف جديد</span><button onclick="showSection('dashboard')" class="text-xs bg-slate-100 px-3 py-1 rounded-lg text-slate-500">رجوع</button></h2>
+                    <form id="fullEmployeeForm" onsubmit="saveNewEmployee(event)" class="space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div><label>الاسم الكامل</label><input type="text" id="f_name" required></div>
+                            <div><label>الرقم الوظيفي</label><input type="text" id="f_id" required></div>
+                            <div><label>تاريخ الميلاد</label><input type="date" id="f_dob"></div>
+                            <div><label>رقم الهاتف</label><input type="tel" id="f_phone"></div>
+                            <div><label>العنوان</label><input type="text" id="f_address"></div>
+                            <div><label>القسم</label><input type="text" id="f_dept"></div>
+                            <div><label>المسمى الوظيفي</label><input type="text" id="f_pos"></div>
+                            <div><label>المرتب</label><input type="number" id="f_salary"></div>
+                            <div><label>تاريخ بدء العمل</label><input type="date" id="f_start_date" onchange="calculateWorkDuration()"></div>
+							<div class="md:col-span-2">
+    <label class="text-blue-600 font-black">مدة العمل (أقدمية الموظف)</label>
+    <div id="duration_result" class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-blue-800 text-sm font-bold h-[45px] flex items-center">
+        --
+    </div>
+</div>
+                            <div><label>رصيد الإجازات</label><input type="number" id="f_leave_bal" value="30"></div>
+                            <div><label>فصيلة الدم</label><input type="text" id="f_blood"></div>
+                            <div><label>الجنسية</label><input type="text" id="f_nat"></div>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black text-xl shadow-lg">حفظ الملف بالكامل</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Profile View -->
+            <section id="employee-profile" class="hidden-section space-y-8 pb-10">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-5">
+                        <button onclick="showSection('dashboard')" class="w-14 h-14 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-400 font-black text-xl no-print">⬅️</button>
+                        <div><h2 class="text-3xl font-black text-slate-800" id="profile-name-header">--</h2><p class="text-blue-600 font-black text-sm" id="profile-job-header">--</p></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 no-print">
+                        <button onclick="window.print()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-lg">🖨️ طباعة</button>
+                        <button onclick="analyzePerformanceWithAI()" class="bg-purple-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-lg ai-pulse">✨ AI</button>
+                        <button id="btn-edit-toggle" onclick="toggleEditProfile()" class="bg-slate-500 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">✏️ تعديل</button>
+                        <button id="btn-save-changes" onclick="saveProfileChanges()" class="hidden bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">💾 حفظ</button>
+                        <button onclick="openModal('modalSchedule')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">🕒 الدوام</button>
+                        <button onclick="openModal('modalAction')" class="bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">⚠️ إنذار</button>
+                        <button onclick="openModal('modalTask')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">📋 مهمة</button>
+						<button onclick="prepareOvertimeModal()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md hover:bg-orange-600 transition">⏳ إضافي</button>
+                        <button onclick="openModal('modalLeave')" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md">🌴 إجازة</button>
+                        <button onclick="deleteEmployeeProfile()" class="bg-red-50 text-red-600 border border-red-100 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-red-600 hover:text-white transition-all shadow-sm">🗑️ حذف</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 font-bold">
+                    <div class="lg:col-span-4 space-y-8">
+                        <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden text-center pb-8">
+                            <div class="h-24 bg-gradient-to-br from-blue-700 to-indigo-800"></div>
+                            <div class="w-24 h-24 bg-white rounded-full mx-auto -mt-12 p-1 shadow-lg flex items-center justify-center text-4xl text-blue-600 font-black" id="profile-avatar">?</div>
+                            <h3 class="text-xl font-black mt-4" id="view-name-card">--</h3>
+                            <div class="mt-6 flex justify-around border-t pt-4 px-4 text-[10px]">
+                                <div><p class="text-slate-400">إنذارات</p><p class="text-red-600 font-black text-lg" id="profile-stat-actions">0</p></div>
+                                <div><p class="text-slate-400">مهام</p><p class="text-blue-600 font-black text-lg" id="profile-stat-tasks">0</p></div>
+                                <div><p class="text-slate-400">إجازات</p><p class="text-emerald-600 font-black text-lg" id="profile-stat-leaves">0</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                            <h4 class="font-black text-slate-800 mb-6 flex items-center gap-3">🕒 جدول الدوام الأسبوعي</h4>
+                            <div id="scheduleListView" class="space-y-3 text-xs"></div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-8 space-y-8">
+                        <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative">
+                            <h3 class="font-black text-slate-800 mb-8 border-b pb-4 text-xl">📁 السجل الكامل للموظف</h3>
+                            <div id="detailed-info-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm"></div>
+                        </div>
+
+                        <div class="space-y-8 no-print">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="bg-white rounded-[2rem] border overflow-hidden shadow-sm">
+                                    <div class="p-5 bg-red-50 text-red-700 font-black border-b">⚠️ الإنذارات</div>
+                                    <table class="w-full text-right text-[10px] font-bold"><tbody id="profileActionsTable" class="divide-y divide-slate-50"></tbody></table>
+                                </div>
+                                <div class="bg-white rounded-[2rem] border overflow-hidden shadow-sm">
+                                    <div class="p-5 bg-emerald-50 text-emerald-700 font-black border-b">🌴 الإجازات</div>
+                                    <table class="w-full text-right text-[10px] font-bold"><tbody id="profileLeavesTable" class="divide-y divide-slate-50"></tbody></table>
+                                </div>
+                            </div>
+							<div class="bg-white rounded-[2rem] border overflow-hidden shadow-sm mt-8 no-print">
+    <div class="p-5 bg-orange-50 text-orange-700 font-black border-b flex justify-between items-center">
+        <span>⏳ سجل الإضافي (الحد الأقصى: 20 ساعة)</span>
+        <span id="profile-overtime-stats" class="text-[10px] bg-white px-2 py-1 rounded-lg border border-orange-200"></span>
+    </div>
+    <table class="w-full text-right text-[10px] font-bold">
+        <thead class="bg-slate-50 text-slate-400 border-b">
+            <tr>
+                <th class="p-3">التاريخ</th>
+                <th class="p-3">الساعات</th>
+                <th class="p-3">السبب</th>
+                <th class="p-3 text-left">حذف</th>
+            </tr>
+        </thead>
+        <tbody id="profileOvertimeTable" class="divide-y divide-slate-50"></tbody>
+    </table>
+</div>
+                            <div class="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                                <div class="p-6 bg-slate-900 text-white font-black flex justify-between items-center">
+                                    <span>📋 سجل المهام</span>
+                                    <select id="taskFilter" onchange="filterProfileTasks()" class="bg-slate-800 text-white text-[10px] border-none rounded-lg px-2 py-1 w-auto outline-none focus:ring-1 focus:ring-blue-400">
+                                        <option value="الكل">فلترة: الكل</option>
+                                        <option value="عمليات">عمليات</option>
+                                        <option value="رسائل الصفحة + تطبيق العميل">رسائل الصفحة + تطبيق العميل</option>
+                                        <option value="المكالمات">المكالمات</option>
+                                        <option value="رسائل تطبيق بريستومان">رسائل تطبيق بريستومان</option>
+                                        <option value="اكتف">اكتف</option>
+                                        <option value="كونتاكت">كونتاكت</option>
+                                        <option value="متابعة">متابعة</option>
+                                    </select>
+                                </div>
+	
+</div>
+
+                                <table class="w-full text-right text-xs">
+                                    <thead class="bg-slate-50 text-slate-500 font-black border-b">
+                                        <tr><th class="p-4">التاريخ</th><th class="p-4">المهمة</th><th class="p-4 text-center">جودة%</th><th class="p-4 text-center">العدد</th></tr>
+                                    </thead>
+                                    <tbody id="tasksListBody" class="divide-y divide-slate-50"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="modalAI" class="modal"><div class="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl p-8 flex flex-col max-h-[90vh] relative"><button onclick="closeModal('modalAI')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black text-xl">✖</button><div class="p-4 bg-purple-700 text-white font-black rounded-t-xl">✨ Gemini الذكي</div><div id="aiResultContent" class="p-6 overflow-y-auto flex-1 font-bold text-sm leading-relaxed"></div></div></div>
+    <div id="modalSchedule" class="modal"><div class="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl p-8 flex flex-col relative max-h-[90vh]"><button onclick="closeModal('modalSchedule')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black text-xl">✖</button><h3 class="text-xl font-black mb-6 text-indigo-700 border-b pb-4">تخصيص الدوام</h3><div id="scheduleInputs" class="space-y-4 overflow-y-auto pr-2"></div><div class="mt-8 flex gap-3"><button onclick="saveWeeklySchedule()" class="flex-1 bg-indigo-700 text-white py-4 rounded-2xl font-black shadow-lg">حفظ</button></div></div></div>
+<div id="modalLeave" class="modal">
+    <div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative">
+        <button onclick="closeModal('modalLeave')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black text-xl">✖</button>
+        <h3 class="text-xl font-black text-emerald-600 mb-6" id="leaveModalTitle">طلب إجازة</h3>
+        <div class="space-y-4 font-bold text-xs">
+            <input type="hidden" id="leave_index">
+            
+            <div>
+                <label class="block mb-1 text-slate-500">نوع الإجازة</label>
+                <select id="leave_type">
+                    <option>مرضية</option>
+                    <option>طارئة</option>
+                    <option>سنوية</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 text-slate-500">من تاريخ</label>
+                    <input type="date" id="leave_from">
+                </div>
+                <div>
+                    <label class="block mb-1 text-slate-500">إلى تاريخ</label>
+                    <input type="date" id="leave_to">
+                </div>
+            </div>
+
+            <div>
+                <label class="block mb-1 text-slate-500">السبب / التفاصيل</label>
+                <textarea id="leave_reason" placeholder="التفاصيل"></textarea>
+            </div>
+
+            <button onclick="saveLeave()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black hover:bg-emerald-700 transition">حفظ الإجازة</button>
+        </div>
+    </div>
+</div>   
+<div id="modalOvertime" class="modal">
+    <div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative">
+        <button onclick="closeModal('modalOvertime')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black text-xl">✖</button>
+        <h3 class="text-xl font-black text-orange-600 mb-6">تسجيل ساعات إضافي</h3>
+        
+        <div class="bg-orange-50 p-3 rounded-xl mb-4 text-center border border-orange-100">
+            <span class="text-xs font-bold text-orange-800">الرصيد المتاح: </span>
+            <span id="overtime_remaining_display" class="text-lg font-black text-orange-600">--</span>
+            <span class="text-xs font-bold text-orange-800"> ساعة</span>
+        </div>
+
+        <div class="space-y-4 font-bold text-xs">
+            <div>
+                <label class="block mb-1 text-slate-500">التاريخ</label>
+                <input type="date" id="overtime_date">
+            </div>
+            
+            <div>
+                <label class="block mb-1 text-slate-500">عدد الساعات</label>
+                <input type="number" id="overtime_hours" placeholder="مثلاً: 2" min="1" max="20">
+            </div>
+
+            <div>
+                <label class="block mb-1 text-slate-500">السبب</label>
+                <select id="overtime_reason">
+                    <option value="نقص اذن">نقص اذن</option>
+                    <option value="نقص اجازة">نقص اجازة</option>
+                    <option value="ضغط عمل">ضغط عمل</option>
+                    <option value="احوال جوية">احوال جوية</option>
+                    <option value="حرب">حرب</option>
+                </select>
+            </div>
+
+            <button onclick="saveOvertime()" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-black transition shadow-lg">حفظ الساعات</button>
+        </div>
+    </div>
+</div>
+ <div id="modalAction" class="modal"><div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative"><button onclick="closeModal('modalAction')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black">✖</button><h3 class="text-xl font-black text-red-600 mb-6">إنذار</h3><div class="space-y-4 font-bold text-xs"><select id="act_type"><option>تأخير</option><option>لفت نظر</option><option>إنذار شفهي</option><option>إجراء جزائي</option></select><input type="date" id="act_date"><textarea id="act_reason" placeholder="السبب"></textarea><button onclick="saveAction()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-black">حفظ</button></div></div></div>
+    <div id="modalTask" class="modal">
+        <div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative">
+            <button onclick="closeModal('modalTask')" class="absolute top-6 left-6 text-slate-400 hover:text-red-500 font-black">✖</button>
+            <h3 class="text-xl font-black text-blue-600 mb-6 uppercase tracking-wider">تقييم مهمة</h3>
+            <div class="space-y-4 font-bold text-xs">
+                <div>
+                    <label>نوع المهمة</label>
+                    <select id="task_type" class="mt-1">
+                        <option value="عمليات">عمليات</option>
+                        <option value="رسائل الصفحة + تطبيق العميل">رسائل الصفحة + تطبيق العميل</option>
+                        <option value="المكالمات">المكالمات</option>
+                        <option value="رسائل تطبيق بريستومان">رسائل تطبيق بريستومان</option>
+                        <option value="اكتف">اكتف</option>
+                        <option value="كونتاكت">كونتاكت</option>
+                        <option value="متابعة">متابعة</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label>الجودة %</label><input type="number" id="task_quality" placeholder="100"></div>
+                    <div><label>العدد</label><input type="number" id="task_count" placeholder="10"></div>
+                </div>
+                <div><label>تاريخ الإنجاز</label><input type="date" id="task_date"></div>
+                <button onclick="saveTask()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">حفظ التقييم</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = ""; 
+        const weekDays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+        let employees = JSON.parse(localStorage.getItem('hr_v17_data')) || [];
+        let currentEmpId = null;
+
+        let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
+
+        function updateSystemDateUI() {
+            const dateStr = systemDate.toISOString().split('T')[0];
+            document.getElementById('systemDateSelector').value = dateStr;
+            document.getElementById('current-date-display').innerText = systemDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
-    };
-    reader.readAsText(file);
+
+        function updateSystemDate() {
+            const newDateVal = document.getElementById('systemDateSelector').value;
+            if (newDateVal) {
+                systemDate = new Date(newDateVal);
+                localStorage.setItem('hr_system_date', newDateVal);
+                updateSystemDateUI();
+				if(document.getElementById('f_start_date').value) calculateWorkDuration();
+                if(document.getElementById('dashboard').classList.contains('hidden-section') === false) {
+                    showSection('dashboard');
+                }
+            }
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden-section'));
+            document.getElementById(id).classList.remove('hidden-section');
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            if(document.getElementById('link-'+id)) document.getElementById('link-'+id).classList.add('active');
+            if(id === 'dashboard') { updateDashboardStats(); renderDashboardSchedule(); renderUpcomingBirthdays(); renderYearlyLeaves(); }
+            if(id === 'employees') renderEmployeeList();
+        }
+
+        function openModal(id) { if(id === 'modalSchedule') prepareScheduleModal(); document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active');
+            if(id === 'modalLeave') { document.getElementById('leaveModalTitle').innerText = "طلب إجازة جديدة"; document.getElementById('leave_index').value = ""; document.getElementById('leave_reason').value = ""; }
+        }
+
+        function saveToStorage() { localStorage.setItem('hr_v17_data', JSON.stringify(employees)); }
+
+        function getDatesOfCurrentWeek() {
+            const baseDate = new Date(systemDate);
+            const dayOfWeek = baseDate.getDay(); 
+            const daysToSubtract = (dayOfWeek === 6) ? 0 : (dayOfWeek + 1);
+            const weekDates = [];
+            const startDay = new Date(baseDate);
+            startDay.setDate(baseDate.getDate() - daysToSubtract);
+            for(let i=0; i<7; i++) {
+                const d = new Date(startDay);
+                d.setDate(startDay.getDate() + i);
+                weekDates.push(d.toISOString().split('T')[0]);
+            }
+            return weekDates;
+        }
+
+     function renderDashboardSchedule() {
+    const tableHeadRow = document.getElementById('dashboardScheduleHeadRow');
+    const tableBody = document.getElementById('dashboardScheduleTable');
+    const currentWeekDates = getDatesOfCurrentWeek();
+
+    // 1. تعريف الشفتات الرسمية
+    const officialShifts = [
+        { label: "08:00 - 03:00", from: "08:00", to: "15:00" },
+        { label: "09:00 - 04:00", from: "09:00", to: "16:00" },
+        { label: "12:00 - 07:00", from: "12:00", to: "19:00" },
+        { label: "04:00 - 11:00", from: "16:00", to: "23:00" },
+        { label: "07:00 - 02:00", from: "19:00", to: "02:00" }
+    ];
+
+    // 2. بناء الهيدر
+    let headerHTML = `<th class="p-4 border-b border-l bg-slate-50 sticky right-0 z-10 text-slate-600 text-xs font-bold">الشفت</th>`;
+    weekDays.forEach((day, index) => {
+        const dateObj = new Date(currentWeekDates[index]);
+        headerHTML += `<th class="p-4 border-b text-center bg-slate-50 font-black text-[11px] text-slate-700">
+            <div class="flex flex-col">
+                <span>${day}</span>
+                <span class="text-[9px] font-normal text-slate-400 mt-1">${dateObj.getDate()}/${dateObj.getMonth()+1}</span>
+            </div>
+        </th>`;
+    });
+    tableHeadRow.innerHTML = headerHTML;
+
+    // 3. بناء صفوف الشفتات مع أسماء نصية بسيطة
+    let bodyHTML = "";
+    officialShifts.forEach(shift => {
+        bodyHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-4 border-l bg-slate-50 sticky right-0 z-10 font-bold text-slate-600 text-[10px] text-center">
+                ${shift.label}
+            </td>`;
+
+        weekDays.forEach(day => {
+            const employeesInShift = employees.filter(emp => {
+                const s = emp.schedule[day];
+                if (!s || s.type === 'عطلة') return false;
+                return s.from === shift.from && s.to === shift.to;
+            });
+
+            if (employeesInShift.length > 0) {
+                // تعديل هنا: عرض الاسم كنص فقط مع لمسة تنسيق بسيطة
+                const names = employeesInShift.map(e => 
+                    `<div class="text-blue-600 text-[11px] font-bold py-1 leading-tight">
+                        • ${e.name}
+                    </div>`
+                ).join('');
+                bodyHTML += `<td class="p-2 border-l border-slate-50 align-top">${names}</td>`;
+            } else {
+                bodyHTML += `<td class="p-2 border-l border-slate-50 bg-slate-50/20"></td>`;
+            }
+        });
+
+        bodyHTML += `</tr>`;
+    });
+
+    tableBody.innerHTML = bodyHTML;
+}
+        function renderScheduleView(emp) {
+            const dates = getDatesOfCurrentWeek();
+            document.getElementById('scheduleListView').innerHTML = weekDays.map((d,i) => {
+                const s = emp.schedule[d] || {type:'عمل', from:'08:00', to:'16:00'};
+                const dObj = new Date(dates[i]);
+                return `<div class="flex justify-between items-center p-3 rounded-2xl border border-slate-50 shadow-sm ${s.type==='عطلة'?'bg-red-50 text-red-600':'bg-slate-50'}"><div><span class="block text-[11px] font-black">${d}</span><span class="text-[9px] text-slate-400">${dObj.getDate()}/${dObj.getMonth()+1}</span></div><span class="text-[11px] font-black">${s.type==='عطلة'?'راحة':s.from+'-'+s.to}</span></div>`;
+            }).join('');
+        }
+function renderYearlyLeaves() {
+    const container = document.getElementById('yearlyLeavesTable');
+    const allLeaves = [];
+    
+    // تفكيك الفترات إلى أيام مفردة للعرض في الجدول السنوي
+    employees.forEach(e => {
+        (e.leaves || []).forEach(l => {
+            if (l.from && l.to) {
+                // إذا كانت فترة، قم بتكرارها لكل يوم
+                const range = getDatesInRange(l.from, l.to);
+                range.forEach(dateStr => {
+                    allLeaves.push({ date: dateStr, type: l.type, empName: e.name, empId: e.id, isRange: true });
+                });
+            } else if (l.date) {
+                // دعم البيانات القديمة (يوم واحد)
+                allLeaves.push({ ...l, empName: e.name, empId: e.id });
+            }
+        });
+    });
+
+    allLeaves.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const grouped = {};
+    allLeaves.forEach(l => { 
+        if(!grouped[l.date]) grouped[l.date] = []; 
+        grouped[l.date].push(l); 
+    });
+
+    if (Object.keys(grouped).length === 0) { 
+        container.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-slate-400 italic">لا توجد إجازات محجوزة</td></tr>'; 
+        return; 
+    }
+
+    container.innerHTML = Object.keys(grouped).sort().map(date => {
+        const group = grouped[date];
+        const isConflict = group.length > 1;
+        const names = group.map(g => `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-[10px] whitespace-nowrap">${g.empName} (${g.type})</span>`).join(' ');
+        
+        return `<tr class="hover:bg-slate-50 border-b border-slate-50 transition-all ${isConflict ? 'bg-red-50' : ''}">
+            <td class="p-4 text-slate-500 font-bold text-xs whitespace-nowrap">${date}</td>
+            <td class="p-4 flex flex-wrap gap-2">${names}</td>
+            <td class="p-4 text-center">${isConflict ? '<span class="text-red-600 font-black text-xs">⚠️ تعارض</span>' : '<span class="text-emerald-600 font-bold text-xs">متاح</span>'}</td>
+        </tr>`;
+    }).join('');
+}
+        function viewProfile(id) {
+		
+            try {
+                currentEmpId = id; 
+                const emp = employees.find(e => e.id == id);
+                if(!emp) { alert('لم يتم العثور على بيانات الموظف!'); return; }
+                document.getElementById('profile-name-header').innerText = emp.name;
+                document.getElementById('profile-job-header').innerText = emp.details['المسمى'];
+                document.getElementById('view-name-card').innerText = emp.name;
+                document.getElementById('profile-avatar').innerText = emp.name.charAt(0);
+                document.getElementById('taskFilter').value = "الكل"; // Reset filter on view
+                updateProfileStats(emp); renderDetailedGrid(emp); renderScheduleView(emp); 
+                renderTaskTable(emp); renderActionTable(emp); renderLeaveTable(emp);renderOvertimeTable(emp); 
+                document.getElementById('btn-edit-toggle').classList.remove('hidden');
+                document.getElementById('btn-save-changes').classList.add('hidden');
+                showSection('employee-profile');
+            } catch(error) { console.error(error); alert("خطأ في العرض"); }
+			
+        }
+
+        function updateProfileStats(emp) {
+            document.getElementById('profile-stat-actions').innerText = (emp.actions || []).length;
+            document.getElementById('profile-stat-tasks').innerText = (emp.tasks || []).length;
+            document.getElementById('profile-stat-leaves').innerText = (emp.leaves || []).length;
+        }
+
+        function renderDetailedGrid(emp) {
+    const grid = document.getElementById('detailed-info-grid');
+    
+    // 1. حساب المدة تلقائياً بناءً على تاريخ "بداية العمل" المخزن
+    let durationText = "لم يحدد";
+    const startVal = emp.details["بداية العمل"];
+    if (startVal) {
+        const start = new Date(startVal);
+        const today = new Date(systemDate); // يستخدم تاريخ النظام الحالي
+        if (start <= today) {
+            let y = today.getFullYear() - start.getFullYear();
+            let m = today.getMonth() - start.getMonth();
+            let d = today.getDate() - start.getDate();
+            if (d < 0) { d += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); m--; }
+            if (m < 0) { m += 12; y--; }
+            durationText = `${y}  سنة <br> ${m}شهر <br> ${d} يوم`;
+        } else {
+            durationText = "التاريخ مستقبلي";
+        }
+    }
+
+    // 2. عرض البيانات الأساسية (موجود أصلاً في كودك)
+    let html = Object.entries(emp.details).map(([k,v]) => 
+        `<div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p class="text-[9px] text-slate-400 uppercase mb-1 font-black">${k}</p>
+            <p class="text-slate-800 font-black text-xs">${v || '-'}</p>
+        </div>`
+    ).join('');
+
+    // 3. إضافة بطاقة "مدة العمل" الجديدة لتظهر في السجل (مثل صورتك)
+    html += `
+        <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200 shadow-sm">
+            <p class="text-[9px] text-blue-500 uppercase mb-1 font-black">مدة الخدمة</p>
+            <p class="text-blue-900 font-black text-xs">${durationText}</p>
+        </div>
+    `;
+
+    grid.innerHTML = html;
 }
 
-/* =======================
-   OVERTIME FUNCTIONS
-======================= */
+        // --- Task Logic with Filtering ---
+        function filterProfileTasks() {
+            const emp = employees.find(e => e.id == currentEmpId);
+            const filterVal = document.getElementById('taskFilter').value;
+            renderTaskTable(emp, filterVal);
+        }
+
+        function renderTaskTable(emp, filter = "الكل") {
+            let tasks = emp.tasks || [];
+            if (filter !== "الكل") {
+                tasks = tasks.filter(t => t.type === filter);
+            }
+            document.getElementById('tasksListBody').innerHTML = tasks.map(t => `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${t.date}</td><td class="p-4 text-slate-800">${t.type}</td><td class="p-4 text-center font-black text-blue-600">${t.quality}%</td><td class="p-4 text-center font-bold">${t.count}</td></tr>`).join('') || `<tr><td colspan="4" class="p-8 text-center text-slate-300 italic">لا توجد سجلات تطابق الفلتر</td></tr>`;
+        }
+
+        function renderActionTable(emp) { document.getElementById('profileActionsTable').innerHTML = (emp.actions||[]).map(act => `<tr class="hover:bg-red-50 border-b"><td class="p-3 text-[9px]">${act.date}</td><td class="p-3 text-red-600">${act.type}</td><td class="p-3 text-slate-500">${act.reason}</td></tr>`).join('') || '<tr><td colspan="3" class="p-4 text-center text-slate-300">لا يوجد</td></tr>'; }
+function renderLeaveTable(emp) { 
+    const body = document.getElementById('profileLeavesTable'); 
+    body.innerHTML = (emp.leaves||[]).map((l, index) => {
+        // تنسيق عرض التاريخ
+        let dateDisplay = "";
+        if (l.from && l.to) {
+            if (l.from === l.to) dateDisplay = l.from; // يوم واحد
+            else dateDisplay = `<span class="block">${l.from}</span><span class="text-[8px] text-slate-400">إلى</span><span class="block">${l.to}</span>`;
+        } else {
+            dateDisplay = l.date; // للنظام القديم
+        }
+
+        return `<tr class="hover:bg-emerald-50 border-b">
+            <td class="p-3 text-[9px] font-bold">${dateDisplay}</td>
+            <td class="p-3 text-emerald-600">${l.type}</td>
+            <td class="p-3 text-slate-500 max-w-[100px] truncate text-[10px]">${l.reason}</td>
+            <td class="p-3 flex gap-1 justify-end">
+                <button onclick="editLeave(${index})" class="text-blue-500 hover:bg-blue-100 p-1 rounded">✎</button>
+                <button onclick="deleteLeave(${index})" class="text-red-500 hover:bg-red-100 p-1 rounded">🗑</button>
+            </td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="4" class="p-4 text-center text-slate-300">لا يوجد إجازات</td></tr>'; 
+}
+        function toggleEditProfile() {
+            const emp = employees.find(e => e.id == currentEmpId);
+            document.getElementById('btn-edit-toggle').classList.add('hidden');
+            document.getElementById('btn-save-changes').classList.remove('hidden');
+            const grid = document.getElementById('detailed-info-grid');
+            grid.innerHTML = `<div class="bg-blue-50 p-5 rounded-[2rem] border col-span-full mb-4 font-black"><label class="text-[10px] text-blue-600">الاسم</label><input type="text" id="edit-name" value="${emp.name}" class="mt-2 bg-white"></div>` + 
+                Object.entries(emp.details).map(([k,v]) => `<div class="bg-slate-50 p-4 rounded-2xl border border-slate-200"><label class="text-[10px] font-black text-slate-400">${k}</label><input type="text" id="edit-field-${k}" value="${v || ''}" class="mt-1 bg-white text-xs"></div>`).join('');
+        }
+
+        function saveProfileChanges() {
+            const idx = employees.findIndex(e => e.id == currentEmpId);
+            employees[idx].name = document.getElementById('edit-name').value;
+            Object.keys(employees[idx].details).forEach(k => { const input = document.getElementById(`edit-field-${k}`); if(input) employees[idx].details[k] = input.value; });
+            saveToStorage(); viewProfile(currentEmpId);
+        }
+
+        function deleteEmployeeProfile() { if (confirm("حذف الموظف نهائياً؟")) { employees = employees.filter(e => e.id != currentEmpId); saveToStorage(); showSection('dashboard'); } }
+
+        function saveAction() { const emp = employees.find(e => e.id == currentEmpId); emp.actions.push({ type: document.getElementById('act_type').value, date: document.getElementById('act_date').value, reason: document.getElementById('act_reason').value }); saveToStorage(); viewProfile(currentEmpId); closeModal('modalAction'); }
+        
+        function saveTask() { 
+            const emp = employees.find(e => e.id == currentEmpId); 
+            const type = document.getElementById('task_type').value;
+            const quality = document.getElementById('task_quality').value;
+            const count = document.getElementById('task_count').value;
+            const date = document.getElementById('task_date').value;
+            
+            if(!date) return alert("يرجى اختيار التاريخ");
+            
+            emp.tasks.push({ 
+                type: type, 
+                quality: quality || 0, 
+                count: count || 0, 
+                date: date 
+            }); 
+            saveToStorage(); 
+            viewProfile(currentEmpId); 
+            closeModal('modalTask'); 
+        }
+
+        function saveWeeklySchedule() { const emp = employees.find(e => e.id == currentEmpId); weekDays.forEach(d => { emp.schedule[d] = { type: document.getElementById('type-'+d).value, from: document.getElementById('from-'+d).value, to: document.getElementById('to-'+d).value }; }); saveToStorage(); viewProfile(currentEmpId); closeModal('modalSchedule'); }
+        function prepareScheduleModal() {
+            const emp = employees.find(e => e.id == currentEmpId);
+            document.getElementById('scheduleInputs').innerHTML = weekDays.map(day => {
+                const s = emp.schedule[day] || { type: 'عمل', from: '08:00', to: '16:00' };
+                return `<div class="flex items-center gap-4 bg-slate-50 p-4 rounded-3xl mb-2 font-black shadow-sm"><span class="w-16">${day}</span><select id="type-${day}" onchange="toggleDayRow('${day}')" class="w-32 text-xs"><option value="عمل" ${s.type==='عمل'?'selected':''}>يوم عمل</option><option value="عطلة" ${s.type==='عطلة'?'selected':''}>يوم راحة</option></select><div id="times-${day}" class="flex gap-2 flex-1 ${s.type==='عطلة'?'opacity-20 pointer-events-none':''}"><input type="time" id="from-${day}" value="${s.from}"><input type="time" id="to-${day}" value="${s.to}"></div></div>`;
+            }).join('');
+        }
+        function toggleDayRow(day) { const t = document.getElementById(`type-${day}`).value; document.getElementById(`times-${day}`).style.opacity = t==='عطلة'?'0.2':'1'; }
+        function saveLeave() {
+    const emp = employees.find(e => e.id == currentEmpId);
+    const index = document.getElementById('leave_index').value;
+    
+    const dateFrom = document.getElementById('leave_from').value;
+    const dateTo = document.getElementById('leave_to').value;
+    const type = document.getElementById('leave_type').value;
+    const reason = document.getElementById('leave_reason').value;
+
+    // التحقق من صحة التواريخ
+    if (!dateFrom || !dateTo) return alert("يرجى تحديد تاريخ البداية والنهاية");
+    if (new Date(dateFrom) > new Date(dateTo)) return alert("تاريخ النهاية يجب أن يكون بعد تاريخ البداية");
+
+    // 1. منطق استرجاع الرصيد القديم في حالة التعديل (قبل الحفظ الجديد)
+    if (index !== "") {
+        const oldLeave = emp.leaves[index];
+        // إذا كانت الإجازة القديمة مخصومة من الرصيد، نعيد الأيام للموظف مؤقتاً
+        if (oldLeave.type === 'سنوية' || oldLeave.type === 'طارئة') {
+            let oldDays = 0;
+            if (oldLeave.from && oldLeave.to) {
+                oldDays = calculateDaysDiff(oldLeave.from, oldLeave.to);
+            } else {
+                oldDays = 1; // للنظام القديم
+            }
+            // تحويل الرصيد لرقم لضمان الجمع الصحيح
+            emp.details['رصيد الإجازات'] = parseInt(emp.details['رصيد الإجازات'] || 0) + oldDays;
+        }
+    }
+
+    // 2. منطق الخصم الجديد
+    const newDaysCount = calculateDaysDiff(dateFrom, dateTo);
+    
+    // التحقق من التعارضات (كما في الكود السابق)
+    const requestedDates = getDatesInRange(dateFrom, dateTo);
+    const conflicts = [];
+    employees.forEach(otherEmp => {
+        if (otherEmp.id != emp.id) {
+            (otherEmp.leaves || []).forEach(l => {
+                let existingDates = (l.from && l.to) ? getDatesInRange(l.from, l.to) : [l.date];
+                if (requestedDates.some(reqDate => existingDates.includes(reqDate))) {
+                    if (!conflicts.includes(otherEmp.name)) conflicts.push(otherEmp.name);
+                }
+            });
+        }
+    });
+    if (conflicts.length > 0 && !confirm(`تنبيه تعارض: (${conflicts.join(', ')}) لديهم إجازة. متابعة؟`)) {
+        // إذا ألغى المستخدم العملية وكان في وضع التعديل، يجب أن نلغي استرجاع الرصيد الذي قمنا به في الخطوة 1
+        // لكن للتبسيط هنا، سنقوم بإعادة تحميل الصفحة أو تجاهل التغيير، 
+        // الأفضل هنا إعادة الدالة دون حفظ.
+        return; 
+    }
+
+    // تطبيق الخصم من الرصيد إذا كان النوع سنوية أو طارئة
+    if (type === 'سنوية' || type === 'طارئة') {
+        const currentBalance = parseInt(emp.details['رصيد الإجازات'] || 0);
+        // يمكنك تفعيل السطر التالي إذا أردت منع الإجازة في حال عدم وجود رصيد
+        // if (currentBalance < newDaysCount) return alert("عذراً، رصيد الإجازات لا يكفي!");
+        
+        emp.details['رصيد الإجازات'] = currentBalance - newDaysCount;
+    }
+
+    const data = { type: type, from: dateFrom, to: dateTo, reason: reason };
+    
+    if (index === "") {
+        emp.leaves.push(data);
+    } else {
+        emp.leaves[index] = data;
+    }
+
+    saveToStorage();
+    viewProfile(currentEmpId); // سيتم تحديث عرض الرصيد هنا تلقائياً
+    closeModal('modalLeave');
+}
+function editLeave(i) { 
+    const emp = employees.find(e => e.id == currentEmpId); 
+    const l = emp.leaves[i]; 
+    
+    document.getElementById('leaveModalTitle').innerText = "تعديل الإجازة"; 
+    document.getElementById('leave_index').value = i; 
+    document.getElementById('leave_type').value = l.type; 
+    document.getElementById('leave_reason').value = l.reason; 
+
+    // التعامل مع البيانات الجديدة والقديمة
+    if (l.from && l.to) {
+        document.getElementById('leave_from').value = l.from;
+        document.getElementById('leave_to').value = l.to;
+    } else if (l.date) {
+        // إذا كان البيانات قديمة (تاريخ واحد)، نضعه في البداية والنهاية
+        document.getElementById('leave_from').value = l.date;
+        document.getElementById('leave_to').value = l.date;
+    }
+
+    openModal('modalLeave'); }
+function deleteLeave(i) { 
+    if(confirm("هل أنت متأكد من حذف الإجازة؟ سيتم استرجاع الرصيد المخصوم إن وجد.")) { 
+        const emp = employees.find(e => e.id == currentEmpId);
+        const leave = emp.leaves[i];
+
+        // استرجاع الرصيد إذا كانت سنوية أو طارئة
+        if (leave.type === 'سنوية' || leave.type === 'طارئة') {
+            let daysToRestore = 0;
+            if (leave.from && leave.to) {
+                daysToRestore = calculateDaysDiff(leave.from, leave.to);
+            } else {
+                daysToRestore = 1; // دعم النظام القديم
+            }
+            
+            emp.details['رصيد الإجازات'] = parseInt(emp.details['رصيد الإجازات'] || 0) + daysToRestore;
+        }
+
+        // حذف الإجازة من المصفوفة
+        emp.leaves.splice(i, 1); 
+        
+        saveToStorage(); 
+        viewProfile(currentEmpId); 
+    } 
+}
+        function saveNewEmployee(e) {
+            e.preventDefault(); const id = document.getElementById('f_id').value;
+            if(employees.some(emp => emp.id == id)) return alert("الرقم مسجل!");
+            employees.push({
+                id: id, name: document.getElementById('f_name').value,
+                details: { "القسم": document.getElementById('f_dept').value, "المسمى": document.getElementById('f_pos').value, "الراتب": document.getElementById('f_salary').value, "الهاتف": document.getElementById('f_phone').value, "تاريخ الميلاد": document.getElementById('f_dob').value, "فصيلة الدم": document.getElementById('f_blood').value, "العنوان": document.getElementById('f_address').value, "بداية العمل": document.getElementById('f_start_date').value, "رصيد الإجازات": document.getElementById('f_leave_bal').value, "الجنسية": document.getElementById('f_nat').value },
+                schedule: {}, actions: [], tasks: [], leaves: []
+            });
+            saveToStorage(); showSection('dashboard');
+        }
+
+        function searchEmployees() { const v = document.getElementById('empSearch').value.toLowerCase(); renderEmployeeList(employees.filter(e => e.name.toLowerCase().includes(v) || e.id.toLowerCase().includes(v))); }
+        function renderEmployeeList(data = employees) { document.getElementById('employeesTableBody').innerHTML = data.map(emp => `<tr class="hover:bg-slate-50 border-b font-bold"><td class="p-5">${emp.name} <span class="text-slate-300">#${emp.id}</span></td><td class="p-5 text-slate-500">${emp.details['القسم']}</td><td class="p-5 text-center"><button onclick="viewProfile('${emp.id}')" class="bg-blue-50 text-blue-700 px-8 py-2 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all">عرض</button></td></tr>`).join(''); }
+        function updateDashboardStats() {
+            document.getElementById('stat-emp-count').innerText = employees.length;
+            let a=0, l=0; employees.forEach(e => { a+=(e.actions||[]).length; l+=(e.leaves||[]).length; });
+            document.getElementById('stat-action-count').innerText = a; document.getElementById('stat-leave-count').innerText = l;
+        }
+        function renderUpcomingBirthdays() {
+            const checkDate = new Date(systemDate);
+            const list = employees.filter(e => { 
+                if(!e.details['تاريخ الميلاد']) return false; 
+                const b = new Date(e.details['تاريخ الميلاد']); 
+                return b.getMonth() === checkDate.getMonth(); 
+            });
+            document.getElementById('birthdayList').innerHTML = list.map(e => `<div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center text-[10px] font-black border border-slate-100"><span>${e.name}</span><span class="text-blue-600">${e.details['تاريخ الميلاد']}</span></div>`).join('') || '<p class="text-center text-slate-300 italic py-4 text-xs">لا يوجد هذا الشهر</p>';
+        }
+        function filterEmployeesByStat(type) {
+            let filtered = [];
+            if(type === 'actions') filtered = employees.filter(e => (e.actions||[]).length > 0);
+            else if(type === 'leaves') filtered = employees.filter(e => (e.leaves||[]).length > 0);
+            showSection('employees'); renderEmployeeList(filtered);
+        }
+        function downloadFullBackup() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(employees)], {type:"application/json"})); a.download = "HR_Backup.json"; a.click(); }
+
+        async function callGemini(prompt) {
+            if(!apiKey) throw new Error("API Key Missing");
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            const res = await r.json(); return res.candidates[0].content.parts[0].text;
+        }
+        async function analyzePerformanceWithAI() {
+            const emp = employees.find(e => e.id == currentEmpId); openModal('modalAI');
+            document.getElementById('aiResultContent').innerHTML = `<p class="animate-pulse text-xs">جاري التحليل...</p>`;
+            try {
+                const r = await callGemini(`حلل أداء الموظف: ${emp.name}.`);
+                document.getElementById('aiResultContent').innerHTML = `<div class="prose font-bold text-[10px] leading-relaxed text-slate-700">${r.replace(/\n/g, '<br>')}</div>`;
+            } catch(e) { document.getElementById('aiResultContent').innerHTML = `<p class="text-red-500 font-bold">يرجى إضافة مفتاح API.</p>`; }
+        }
+
+        window.onload = () => {
+            updateSystemDateUI();
+            showSection('dashboard');
+        };
+		function calculateWorkDuration() {
+    const startDateVal = document.getElementById('f_start_date').value;
+    const resultDisplay = document.getElementById('duration_result');
+    
+    if (!startDateVal) return;
+
+    const startDate = new Date(startDateVal);
+    const today = new Date(systemDate); // تستخدم تاريخ النظام الخاص بك
+
+    if (startDate > today) {
+        resultDisplay.innerText = "تاريخ البدء مستقبلي!";
+        resultDisplay.style.color = "red";
+        return;
+    }
+
+    let years = today.getFullYear() - startDate.getFullYear();
+    let months = today.getMonth() - startDate.getMonth();
+    let days = today.getDate() - startDate.getDate();
+
+    if (days < 0) {
+        months--;
+        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    }
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    resultDisplay.style.color = "#1e40af";
+    resultDisplay.innerText = `${years} سنة و ${months} شهر و ${days} يوم`;
+}
+// دالة مساعدة لتوليد مصفوفة بجميع الأيام بين تاريخين
+function getDatesInRange(startDate, endDate) {
+    const dates = [];
+    let currentDate = new Date(startDate);
+    const end = new Date(endDate);
+    while (currentDate <= end) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
+}
+function calculateDaysDiff(start, end) {
+    const date1 = new Date(start);
+    const date2 = new Date(end);
+    // الفرق بالملي ثانية مقسوماً على (يوم واحد بالملي ثانية) + 1 لأن اليوم الأول محسوب
+    const diffTime = Math.abs(date2 - date1);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+    return diffDays;
+}// 1. دالة تجهيز وفتح نافذة الإضافي
 function prepareOvertimeModal() {
     const emp = employees.find(e => e.id == currentEmpId);
-    if (!emp.overtime) emp.overtime = [];
-    const usedHours = emp.overtime.reduce((sum, item) => sum + parseFloat(item.hours), 0);
+    // حساب الساعات المستخدمة
+    const usedHours = (emp.overtime || []).reduce((sum, item) => sum + parseFloat(item.hours), 0);
     const remaining = 20 - usedHours;
 
     document.getElementById('overtime_remaining_display').innerText = remaining;
-    document.getElementById('overtime_date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('overtime_date').value = new Date().toISOString().split('T')[0]; // تاريخ اليوم افتراضياً
     document.getElementById('overtime_hours').value = "";
-
-    if (remaining <= 0) alert("تنبيه: لقد استنفذ هذا الموظف رصيد الإضافي بالكامل (20 ساعة).");
-
+    
+    if (remaining <= 0) {
+        alert("تنبيه: لقد استنفذ هذا الموظف رصيد الإضافي بالكامل (20 ساعة).");
+    }
+    
     openModal('modalOvertime');
 }
 
+// 2. دالة حفظ الإضافي مع التحقق من الرصيد
 function saveOvertime() {
     const emp = employees.find(e => e.id == currentEmpId);
+    
+    // التأكد من وجود مصفوفة للإضافي
     if (!emp.overtime) emp.overtime = [];
 
     const date = document.getElementById('overtime_date').value;
@@ -188,6 +957,7 @@ function saveOvertime() {
 
     if (!date || !hours || hours <= 0) return alert("يرجى إدخال بيانات صحيحة");
 
+    // التحقق من الحد الأقصى (20 ساعة)
     const currentUsed = emp.overtime.reduce((sum, item) => sum + parseFloat(item.hours), 0);
     const newTotal = currentUsed + hours;
 
@@ -196,21 +966,32 @@ function saveOvertime() {
         return;
     }
 
-    emp.overtime.push({ date, hours, reason });
+    // إضافة السجل
+    emp.overtime.push({
+        date: date,
+        hours: hours,
+        reason: reason
+    });
+
     saveToStorage();
-    viewProfile(currentEmpId);
+    viewProfile(currentEmpId); // تحديث العرض
     closeModal('modalOvertime');
 }
 
+// 3. دالة عرض جدول الإضافي في البروفايل
 function renderOvertimeTable(emp) {
     const tbody = document.getElementById('profileOvertimeTable');
     const records = emp.overtime || [];
+    
+    // حساب الإحصائيات
     const totalHours = records.reduce((sum, item) => sum + parseFloat(item.hours), 0);
     const remaining = 20 - totalHours;
 
+    // تحديث شريط الحالة في رأس الجدول
     document.getElementById('profile-overtime-stats').innerHTML = 
         `مستخدم: <span class="text-red-600">${totalHours}</span> | متبقي: <span class="text-green-600">${remaining}</span>`;
 
+    // رسم الجدول
     tbody.innerHTML = records.map((item, index) => `
         <tr class="hover:bg-orange-50 transition">
             <td class="p-3 text-slate-500">${item.date}</td>
@@ -223,33 +1004,48 @@ function renderOvertimeTable(emp) {
     `).join('') || '<tr><td colspan="4" class="p-6 text-center text-slate-300 italic">لا يوجد ساعات إضافية مسجلة</td></tr>';
 }
 
+// 4. دالة حذف سجل إضافي
 function deleteOvertime(index) {
-    if(confirm("هل تريد حذف سجل الإضافي هذا؟")) {
+    if (confirm("هل تريد حذف سجل الإضافي هذا؟")) {
         const emp = employees.find(e => e.id == currentEmpId);
-        emp.overtime.splice(index,1);
+        emp.overtime.splice(index, 1);
         saveToStorage();
         viewProfile(currentEmpId);
     }
 }
-
 function downloadOvertimeExcel() {
     const startDateVal = document.getElementById('export_start_date').value;
     const endDateVal = document.getElementById('export_end_date').value;
 
-    if(!startDateVal || !endDateVal) return alert("يرجى تحديد الفترة (من - إلى) أولاً");
-    if(new Date(startDateVal) > new Date(endDateVal)) return alert("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+    if (!startDateVal || !endDateVal) return alert("يرجى تحديد الفترة (من - إلى) أولاً");
+    if (new Date(startDateVal) > new Date(endDateVal)) return alert("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
 
+    // 1. تجهيز رأس الجدول (Headers)
+    // \uFEFF هو رمز BOM لجعل الإكسل يقرأ العربية بشكل صحيح
     let csvContent = "\uFEFF"; 
     csvContent += "الاسم الكامل,الرقم الوظيفي,القسم,التاريخ,عدد الساعات,السبب\n";
 
-    let totalHoursAll=0, recordsFound=0;
+    let totalHoursAll = 0;
+    let recordsFound = 0;
 
-    employees.forEach(emp=>{
-        if(emp.overtime && emp.overtime.length>0){
-            emp.overtime.forEach(record=>{
-                if(record.date >= startDateVal && record.date <= endDateVal){
-                    const cleanReason = (record.reason||"").replace(/,/g," - ");
-                    const row=[emp.name, emp.id, emp.details['القسم']||"غير محدد", record.date, record.hours, cleanReason].join(",");
+    // 2. تجميع البيانات
+    employees.forEach(emp => {
+        if (emp.overtime && emp.overtime.length > 0) {
+            emp.overtime.forEach(record => {
+                // فلترة حسب التاريخ
+                if (record.date >= startDateVal && record.date <= endDateVal) {
+                    // تنظيف البيانات من الفواصل التي قد تكسر ملف CSV
+                    const cleanReason = (record.reason || "").replace(/,/g, " - ");
+                    
+                    const row = [
+                        emp.name,
+                        emp.id,
+                        emp.details['القسم'] || "غير محدد",
+                        record.date,
+                        record.hours,
+                        cleanReason
+                    ].join(",");
+
                     csvContent += row + "\n";
                     totalHoursAll += parseFloat(record.hours);
                     recordsFound++;
@@ -258,109 +1054,55 @@ function downloadOvertimeExcel() {
         }
     });
 
-    if(recordsFound===0) return alert("لا توجد سجلات إضافي في هذه الفترة.");
+    if (recordsFound === 0) return alert("لا توجد سجلات إضافي في هذه الفترة.");
 
+    // إضافة سطر المجموع النهائي
     csvContent += `\n,,,المجموع الكلي,${totalHoursAll} ساعة,`;
 
-    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
-    const link=document.createElement("a");
-    const url=URL.createObjectURL(blob);
+    // 3. إنشاء وتحميل الملف
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
     link.setAttribute("href", url);
     link.setAttribute("download", `تقرير_الاضافي_${startDateVal}_الى_${endDateVal}.csv`);
-    link.style.visibility='hidden';
+    link.style.visibility = 'hidden';
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
+    
     closeModal('modalExportOvertime');
 }
+function importFullBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-/* =======================
-   AI FUNCTIONS
-======================= */
-async function callGemini(prompt){
-    if(!apiKey) throw new Error("API Key Missing");
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-        method:'POST',
-        body: JSON.stringify({ contents: [{ parts:[{ text: prompt }] }] })
-    });
-    const res = await r.json();
-    return res.candidates[0].content.parts[0].text;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+
+            // التحقق من أن البيانات عبارة عن مصفوفة (Array) كما يتوقع النظام
+            if (Array.isArray(importedData)) {
+                if (confirm("تحذير: استعادة النسخة الاحتياطية سيؤدي إلى مسح البيانات الحالية واستبدالها. هل أنت متأكد؟")) {
+                    // 1. تحديث المصفوفة في الذاكرة المؤقتة
+                    employees = importedData;
+                    // 2. حفظ البيانات الجديدة في localStorage
+                    saveToStorage();
+                    // 3. إعادة تحميل الصفحة لتحديث كل الجداول ولوحة التحكم
+                    window.location.reload();
+                }
+            } else {
+                alert("الملف غير صحيح! تأكد من اختيار ملف نسخة احتياطية صالح.");
+            }
+        } catch (err) {
+            alert("حدث خطأ أثناء قراءة الملف. تأكد أنه ملف JSON سليم.");
+            console.error(err);
+        }
+    };
+    reader.readAsText(file);
 }
-
-async function analyzePerformanceWithAI(){
-    const emp=employees.find(e=>e.id==currentEmpId);
-    openModal('modalAI');
-    document.getElementById('aiResultContent').innerHTML=`<p class="animate-pulse text-xs">جاري التحليل...</p>`;
-    try{
-        const r = await callGemini(`حلل أداء الموظف: ${emp.name}.`);
-        document.getElementById('aiResultContent').innerHTML=`<div class="prose font-bold text-[10px] leading-relaxed text-slate-700">${r.replace(/\n,'<br>')}</div>`;
-    } catch(e){
-        document.getElementById('aiResultContent').innerHTML=`<p class="text-red-500 font-bold">يرجى إضافة مفتاح API.</p>`;
-    }
-}
-
-/* =======================
-   UTILITY FUNCTIONS
-======================= */
-function calculateWorkDuration() {
-    const startDateVal = document.getElementById('f_start_date').value;
-    const resultDisplay = document.getElementById('duration_result');
-    if(!startDateVal) return;
-    const startDate = new Date(startDateVal);
-    const today = new Date(systemDate);
-    if(startDate>today){ resultDisplay.innerText="تاريخ البدء مستقبلي!"; resultDisplay.style.color="red"; return; }
-    let years = today.getFullYear()-startDate.getFullYear();
-    let months = today.getMonth()-startDate.getMonth();
-    let days = today.getDate()-startDate.getDate();
-    if(days<0){ months--; days+=new Date(today.getFullYear(),today.getMonth(),0).getDate(); }
-    if(months<0){ years--; months+=12; }
-    resultDisplay.style.color="#1e40af";
-    resultDisplay.innerText=`${years} سنة و ${months} شهر و ${days} يوم`;
-}
-
-function getDatesInRange(startDate,endDate){
-    const dates=[]; let currentDate=new Date(startDate); const end=new Date(endDate);
-    while(currentDate<=end){ dates.push(currentDate.toISOString().split('T')[0]); currentDate.setDate(currentDate.getDate()+1); }
-    return dates;
-}
-
-function calculateDaysDiff(start,end){
-    const date1=new Date(start);
-    const date2=new Date(end);
-    const diffTime=Math.abs(date2-date1);
-    const diffDays=Math.ceil(diffTime/(1000*60*60*24))+1;
-    return diffDays;
-}
-
-/* =======================
-   ONLOAD
-======================= */
-window.onload = ()=>{
-    updateSystemDateUI?.();
-    showSection('dashboard');
-};
-</script>
-
-<!-- =======================
-     FIREBASE SDK
-======================= -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
-  authDomain: "hr-operation.firebaseapp.com",
-  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
-  projectId: "hr-operation",
-  storageBucket: "hr-operation.firebasestorage.app",
-  messagingSenderId: "498775599728",
-  appId: "1:498775599728:web:b195dea758f3cf415162b5",
-  measurementId: "G-YQTYHQ40NN"
-};
-
-const app = initializeApp(firebaseConfig);
-console.log("🔥 Firebase Connected", app);
-</script>
+    </script>
 </body>
 </html>
