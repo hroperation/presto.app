@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/presto.app/">
     
-    <title>Presto HR | إدارة </title>
+    <title>Presto HR | تسجيل الدخول</title>
     
     <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -28,7 +28,6 @@
             --success: #2ecc71;
             --info: #3498db;
             --warning: #f1c40f;
-            --purple: #9b59b6;
             --danger: #e74c3c;
         }
 
@@ -44,7 +43,34 @@
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'El Messiri', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- Sidebar --- */
+        /* --- Login Screen Styles --- */
+        #login-view {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-main); z-index: 5000;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+        .login-card {
+            background: var(--bg-card); padding: 40px; border-radius: 30px;
+            box-shadow: var(--shadow-md); width: 90%; max-width: 400px;
+            text-align: center; border: 1px solid var(--border-color);
+        }
+        .login-logo { width: 150px; margin-bottom: 20px; }
+        .login-input {
+            width: 100%; padding: 15px; margin-bottom: 15px;
+            border-radius: 15px; border: 1px solid var(--border-color);
+            font-family: 'El Messiri'; background: var(--bg-main);
+            color: var(--text-main); outline: none;
+        }
+        .login-input:focus { border-color: var(--primary); }
+        .login-btn {
+            width: 100%; padding: 15px; background: var(--primary);
+            color: white; border: none; border-radius: 15px;
+            font-weight: 700; cursor: pointer; font-size: 16px;
+        }
+        .login-btn:hover { background: var(--primary-dark); }
+
+        /* --- Sidebar & Layout --- */
         .sidebar { width: 85px; background: var(--sidebar-bg); margin: 15px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; padding: 30px 0; box-shadow: var(--shadow-md); z-index: 1000; }
         .sidebar:hover { width: 260px; align-items: stretch; padding: 30px 20px; }
         .sidebar-logo { height: 40px; margin-bottom: 50px; object-fit: contain; padding: 0 10px; }
@@ -70,7 +96,6 @@
         .stat-box h4 { margin: 0; font-size: 14px; color: var(--text-muted); font-weight: 400; }
         .stat-box .val { font-size: 32px; font-weight: 800; margin-top: 8px; font-family: 'Inter', sans-serif; color: var(--text-main); }
 
-        /* Table Styles */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table th { text-align: right; padding: 18px; border-bottom: 2px solid var(--bg-main); color: var(--text-muted); font-size: 13px; font-weight: 600; }
         .data-table td { padding: 15px 18px; border-bottom: 1px solid var(--bg-main); font-size: 14px; }
@@ -85,7 +110,7 @@
 
         .emp-tag { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 5px 10px; border-radius: 10px; display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; box-shadow: 0 3px 6px rgba(255,107,74,0.2); animation: fadeIn 0.3s ease; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(10px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 6000; backdrop-filter: blur(10px); }
         .modal-content { background: var(--bg-card); width: 95%; max-width: 850px; border-radius: 35px; padding: 40px; position: relative; max-height: 90vh; overflow-y: auto; }
         
         .btn-main { background: var(--primary); color: white; border: none; padding: 14px 28px; border-radius: 18px; cursor: pointer; font-weight: 700; font-family: 'El Messiri'; display: flex; align-items: center; gap: 10px; }
@@ -99,12 +124,11 @@
         .action-card-btn i { font-size: 24px; color: var(--primary); }
         .action-card-btn span { font-weight: 700; font-size: 13px; }
 
-        /* Balance UI */
         .balance-card { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 15px 25px; border-radius: 20px; text-align: center; box-shadow: var(--shadow-sm); }
         .balance-val { font-size: 24px; font-weight: 800; display: block; font-family: 'Inter'; }
 
-        .hidden { display: none; }
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 16px 32px; border-radius: 20px; display: none; z-index: 3000; box-shadow: var(--shadow-md); border-right: 5px solid var(--primary); }
+        .hidden { display: none !important; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 16px 32px; border-radius: 20px; display: none; z-index: 7000; box-shadow: var(--shadow-md); border-right: 5px solid var(--primary); }
 
         .loading-screen { position: fixed; inset: 0; background: var(--bg-main); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 60px; height: 60px; border: 6px solid #e0e0e0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s infinite; }
@@ -114,7 +138,7 @@
         .form-group label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
         input, select, textarea { padding: 14px; border-radius: 15px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-family: 'El Messiri'; outline: none; }
         input:focus, textarea:focus { border-color: var(--primary); background: var(--bg-card); }
-
+        
         .profile-header { display: flex; gap: 30px; align-items: center; margin-bottom: 40px; position: relative; }
         .profile-avatar { width: 120px; height: 120px; border-radius: 35px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); display: flex; align-items: center; justify-content: center; font-size: 45px; color: white; font-weight: 800; box-shadow: var(--shadow-md); }
         .profile-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -122,7 +146,6 @@
         .profile-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; }
         .profile-value { font-size: 16px; font-weight: 700; color: var(--text-main); }
         .back-btn { background: var(--bg-main); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-
         .btn-edit-float { position: absolute; top: 0; left: 0; background: var(--secondary); color: white; border: none; padding: 10px 18px; border-radius: 15px; font-family: inherit; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
         .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
@@ -134,147 +157,155 @@
 
     <div id="loading-screen" class="loading-screen">
         <div class="spinner"></div>
-        <p style="margin-top: 20px; font-weight: bold;">جاري تهيئة نظام بريستو...</p>
+        <p style="margin-top: 20px; font-weight: bold;">جاري الاتصال بالنظام...</p>
+    </div>
+
+    <div id="login-view" class="hidden">
+        <div class="login-card">
+            <img src="https://admin.presto.app/assets/presto-named-logo-bfcd1e42.png" class="login-logo">
+            <h3 style="margin-bottom: 30px; color: var(--text-main);">تسجيل دخول الموظفين</h3>
+            <div style="text-align: right;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">البريد الإلكتروني</label>
+                <input type="email" id="login-email" class="login-input" placeholder="admin@presto.app">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">كلمة المرور</label>
+                <input type="password" id="login-password" class="login-input" placeholder="********">
+                <p id="login-error" style="color: var(--danger); font-size: 13px; display: none; margin-bottom: 15px;"></p>
+                <button onclick="loginUser()" class="login-btn" id="login-btn-action">دخول</button>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast">تمت العملية بنجاح!</div>
 
-  <aside class="sidebar">
-        <img src="https://admin.presto.app/assets/presto-named-logo-bfcd1e42.png" class="sidebar-logo">
-        <nav class="nav-menu">
-            <a onclick="showView('home')" id="link-home" class="nav-link active"><i class="fas fa-chart-pie"></i> <span>الرئيسية</span></a>
-            <a onclick="showView('employees')" id="link-employees" class="nav-link"><i class="fas fa-user-friends"></i> <span>الموظفين</span></a>
-            <a onclick="showView('overtime')" id="link-overtime" class="nav-link"><i class="fas fa-calculator"></i> <span>احتساب الإضافي</span></a>
-        </nav>
+    <div id="main-app" class="hidden" style="display: flex; height: 100vh; width: 100%;">
+        <aside class="sidebar">
+            <img src="https://admin.presto.app/assets/presto-named-logo-bfcd1e42.png" class="sidebar-logo">
+            <nav class="nav-menu">
+                <a onclick="showView('home')" id="link-home" class="nav-link active"><i class="fas fa-chart-pie"></i> <span>الرئيسية</span></a>
+                <a onclick="showView('employees')" id="link-employees" class="nav-link"><i class="fas fa-user-friends"></i> <span>الموظفين</span></a>
+                <a onclick="showView('overtime')" id="link-overtime" class="nav-link"><i class="fas fa-calculator"></i> <span>احتساب الإضافي</span></a>
+            </nav>
 
-        <div style="margin-top: auto; width: 100%; padding: 0 10px; margin-bottom: 20px;">
-            <a onclick="exportData()" class="nav-link" style="color: var(--success); cursor: pointer;" title="تصدير نسخة احتياطية">
-                <i class="fas fa-download"></i> <span>تصدير</span>
-            </a>
-            <a onclick="document.getElementById('import-file').click()" class="nav-link" style="color: var(--info); cursor: pointer;" title="استيراد بيانات">
-                <i class="fas fa-upload"></i> <span>استيراد</span>
-            </a>
-            <input type="file" id="import-file" style="display: none" accept=".json" onchange="importData(this)">
-        </div>
-    </aside>
-
-    <div class="workspace">
-        <header class="top-bar">
-            <h2 id="page-title" style="margin: 0; font-weight: 800;">لوحة التحكم</h2>
-            <div style="display: flex; gap: 25px; align-items: center;">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; color: var(--text-muted); font-size: 18px;"><i class="fas fa-moon"></i></button>
-                <div style="display: flex; align-items: center; gap: 12px; border-right: 1px solid var(--border-color); padding-right: 20px;">
-                    <div style="text-align: left; display: flex; flex-direction: column; align-items: flex-end;">
-                        <span style="font-weight: 700; font-size: 14px;">أدمن بريستو</span>
-                        <span style="font-size: 11px; color: var(--text-muted);">مدير الموارد البشرية</span>
-                    </div>
-                    <div class="avatar" style="width:45px; height:45px; background: var(--primary); color:white; border-radius:15px; display:flex; align-items:center; justify-content:center; font-weight:bold;">أ</div>
-                </div>
+            <div style="margin-top: auto; width: 100%; padding: 0 10px; margin-bottom: 20px;">
+                <a onclick="exportData()" class="nav-link" style="color: var(--success); cursor: pointer;" title="تصدير نسخة احتياطية">
+                    <i class="fas fa-download"></i> <span>تصدير</span>
+                </a>
+                <a onclick="document.getElementById('import-file').click()" class="nav-link" style="color: var(--info); cursor: pointer;" title="استيراد بيانات">
+                    <i class="fas fa-upload"></i> <span>استيراد</span>
+                </a>
+                <input type="file" id="import-file" style="display: none" accept=".json" onchange="importData(this)">
             </div>
-        </header>
+        </aside>
 
-        <div id="content-container" class="content-area">
-            <div id="view-home">
-                <div class="stats-row">
-                    <div class="stat-box"><h4>إجمالي الموظفين</h4><div class="val" id="count-home">0</div></div>
-                    <div class="stat-box"><h4>المتواجدين الآن</h4><div class="val" id="online-count">0</div></div>
-                    <div class="stat-box"><h4>طلبات الأذونات</h4><div class="val" id="today-permissions">0</div></div>
-                    <div class="stat-box"><h4>طلبات الإجازة</h4><div class="val" id="today-leaves">0</div></div>
+        <div class="workspace">
+            <header class="top-bar">
+                <h2 id="page-title" style="margin: 0; font-weight: 800;">لوحة التحكم</h2>
+                <div style="display: flex; gap: 25px; align-items: center;">
+                    <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; color: var(--text-muted); font-size: 18px;"><i class="fas fa-moon"></i></button>
+                    <button onclick="logoutUser()" style="background: #fee7e7; border: none; cursor: pointer; color: #e74c3c; padding: 8px 15px; border-radius: 12px; font-weight: 700; font-family: inherit; font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-sign-out-alt"></i> خروج
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 12px; border-right: 1px solid var(--border-color); padding-right: 20px;">
+                        <div style="text-align: left; display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="font-weight: 700; font-size: 14px;" id="user-email-display">أدمن</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">مدير الموارد البشرية</span>
+                        </div>
+                        <div class="avatar" style="width:45px; height:45px; background: var(--primary); color:white; border-radius:15px; display:flex; align-items:center; justify-content:center; font-weight:bold;">أ</div>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3><i class="far fa-calendar-alt" style="color: var(--primary);"></i> الجدول الزمني للإسبوع</h3>
-                    <div style="overflow-x: auto;">
-                        <table class="schedule-table">
+            </header>
+
+            <div id="content-container" class="content-area">
+                <div id="view-home">
+                    <div class="stats-row">
+                        <div class="stat-box"><h4>إجمالي الموظفين</h4><div class="val" id="count-home">0</div></div>
+                        <div class="stat-box"><h4>المتواجدين الآن</h4><div class="val" id="online-count">0</div></div>
+                        <div class="stat-box"><h4>طلبات الأذونات</h4><div class="val" id="today-permissions">0</div></div>
+                        <div class="stat-box"><h4>طلبات الإجازة</h4><div class="val" id="today-leaves">0</div></div>
+                    </div>
+                    <div class="card">
+                        <h3><i class="far fa-calendar-alt" style="color: var(--primary);"></i> الجدول الزمني للإسبوع</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr><th>الفترة</th><th>الأحد</th><th>الاثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th><th>الجمعة</th><th>السبت</th></tr>
+                                </thead>
+                                <tbody id="home-schedule-body">
+                                    <tr data-shift="08:00 - 15:00"><td>08:00 - 15:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                                    <tr data-shift="09:00 - 16:00"><td>09:00 - 16:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                                    <tr data-shift="12:00 - 19:00"><td>12:00 - 19:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                                    <tr data-shift="16:00 - 23:00"><td>16:00 - 23:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                                    <tr data-shift="19:00 - 02:00"><td>19:00 - 02:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-employees" class="hidden" style="grid-column: 1 / -1;">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <h3><i class="fas fa-id-card" style="color: var(--primary);"></i> سجل الموظفين</h3>
+                            <button onclick="openModalForAdd()" class="btn-main"><i class="fas fa-plus-circle"></i> إضافة موظف</button>
+                        </div>
+                        <table class="data-table">
+                            <thead><tr><th>ID</th><th>الاسم</th><th>القسم</th><th>المسمى</th><th>الإجراءات</th></tr></thead>
+                            <tbody id="employeesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-overtime" class="hidden" style="grid-column: 1 / -1;">
+                    <div class="card">
+                        <h3><i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i> تقرير العمل الإضافي</h3>
+                        <div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+                            <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                                <label>من تاريخ</label>
+                                <input type="date" id="overtime-from" onchange="previewOvertimeData()" style="background: white;">
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                                <label>إلى تاريخ</label>
+                                <input type="date" id="overtime-to" onchange="previewOvertimeData()" style="background: white;">
+                            </div>
+                            <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: center;">
+                                 <div style="background: #e1f5fe; color: #0288d1; padding: 10px 20px; border-radius: 12px; width: 100%; text-align: center;">
+                                     إجمالي الفترة: <span id="total-month-hours" style="font-weight: 800; font-size: 18px;">0</span> ساعة
+                                 </div>
+                            </div>
+                            <button onclick="downloadOvertimeCSV()" class="btn-main" style="height: 52px; background: #27ae60; min-width: 160px;">
+                                <i class="fas fa-file-excel"></i> تحميل إكسل
+                            </button>
+                        </div>
+                        <h4 style="margin-bottom: 15px; color: var(--text-muted);">معاينة البيانات</h4>
+                        <table class="data-table">
                             <thead>
-                                <tr><th>الفترة</th><th>الأحد</th><th>الاثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th><th>الجمعة</th><th>السبت</th></tr>
+                                <tr><th>التاريخ</th><th>الموظف</th><th>القسم</th><th>عدد الساعات</th><th>السبب</th></tr>
                             </thead>
-                            <tbody id="home-schedule-body">
-                                <tr data-shift="08:00 - 15:00"><td>08:00 - 15:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                                <tr data-shift="09:00 - 16:00"><td>09:00 - 16:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                                <tr data-shift="12:00 - 19:00"><td>12:00 - 19:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                                <tr data-shift="16:00 - 23:00"><td>16:00 - 23:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                                <tr data-shift="19:00 - 02:00"><td>19:00 - 02:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <tbody id="overtime-report-body">
+                                <tr><td colspan="5" style="text-align:center; padding: 30px; color: var(--text-muted);">يرجى اختيار الفترة لعرض البيانات</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <div id="view-employees" class="hidden" style="grid-column: 1 / -1;">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                        <h3><i class="fas fa-id-card" style="color: var(--primary);"></i> سجل الموظفين</h3>
-                        <button onclick="openModalForAdd()" class="btn-main"><i class="fas fa-plus-circle"></i> إضافة موظف</button>
-                    </div>
-                    <table class="data-table">
-                        <thead><tr><th>ID</th><th>الاسم</th><th>القسم</th><th>المسمى</th><th>الإجراءات</th></tr></thead>
-                        <tbody id="employeesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="view-overtime" class="hidden" style="grid-column: 1 / -1;">
-                <div class="card">
-                    <h3><i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i> تقرير العمل الإضافي</h3>
-                    
-                    <div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-                        
-                        <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
-                            <label>من تاريخ</label>
-                            <input type="date" id="overtime-from" onchange="previewOvertimeData()" style="background: white;">
-                        </div>
-
-                        <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
-                            <label>إلى تاريخ</label>
-                            <input type="date" id="overtime-to" onchange="previewOvertimeData()" style="background: white;">
-                        </div>
-
-                        <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: center;">
-                             <div style="background: #e1f5fe; color: #0288d1; padding: 10px 20px; border-radius: 12px; width: 100%; text-align: center;">
-                                 إجمالي الفترة: <span id="total-month-hours" style="font-weight: 800; font-size: 18px;">0</span> ساعة
-                             </div>
-                        </div>
-                        
-                        <button onclick="downloadOvertimeCSV()" class="btn-main" style="height: 52px; background: #27ae60; min-width: 160px;">
-                            <i class="fas fa-file-excel"></i> تحميل إكسل
-                        </button>
-                    </div>
-
-                    <h4 style="margin-bottom: 15px; color: var(--text-muted);">معاينة البيانات</h4>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>الموظف</th>
-                                <th>القسم</th>
-                                <th>عدد الساعات</th>
-                                <th>السبب</th>
-                            </tr>
-                        </thead>
-                        <tbody id="overtime-report-body">
-                            <tr><td colspan="5" style="text-align:center; padding: 30px; color: var(--text-muted);">يرجى اختيار الفترة لعرض البيانات</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="view-profile" class="hidden" style="grid-column: 1 / -1;">
-                <div class="card">
-                    <button onclick="showView('employees')" class="back-btn"><i class="fas fa-arrow-right"></i> العودة للسجل</button>
-                    <div id="profile-content"></div>
-                </div>
-            </div>
-
-            <div id="side-widgets" class="side-widgets">
-                <div class="card">
-                    <h4><i class="fas fa-birthday-cake" style="color: var(--primary);"></i> أعياد الميلاد</h4>
-                    <div id="birthday-list">
-                        <p style="font-size: 13px; color: var(--text-muted);">لا يوجد أعياد ميلاد اليوم</p>
+                <div id="view-profile" class="hidden" style="grid-column: 1 / -1;">
+                    <div class="card">
+                        <button onclick="showView('employees')" class="back-btn"><i class="fas fa-arrow-right"></i> العودة للسجل</button>
+                        <div id="profile-content"></div>
                     </div>
                 </div>
-                <div class="card" style="background: var(--secondary); color: white;">
-                    <h4 style="margin-top:0; color: var(--primary-light);">تذكير</h4>
-                    <p style="font-size: 13px; opacity: 0.8;">تحديث السياسات بنهاية الشهر.</p>
+
+                <div id="side-widgets" class="side-widgets">
+                    <div class="card">
+                        <h4><i class="fas fa-birthday-cake" style="color: var(--primary);"></i> أعياد الميلاد</h4>
+                        <div id="birthday-list">
+                            <p style="font-size: 13px; color: var(--text-muted);">لا يوجد أعياد ميلاد اليوم</p>
+                        </div>
+                    </div>
+                    <div class="card" style="background: var(--secondary); color: white;">
+                        <h4 style="margin-top:0; color: var(--primary-light);">تذكير</h4>
+                        <p style="font-size: 13px; opacity: 0.8;">تحديث السياسات بنهاية الشهر.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -284,35 +315,21 @@
         <div class="modal-content">
             <h3 id="modal-title" style="margin-bottom: 25px;"><i class="fas fa-user-plus" style="color: var(--primary);"></i> بيانات الموظف</h3>
             <input type="hidden" id="edit-doc-id">
-            
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                <div class="form-group"><label>الاسم الكامل</label><input type="text" id="in-name" placeholder="محمد علي"></div>
-                <div class="form-group"><label>الرقم الوظيفي</label><input type="text" id="in-id" placeholder="PR-100"></div>
-                <div class="form-group">
-                    <label>القسم</label>
-                    <select id="in-dept">
-                        <option>العمليات</option><option>الإدارة</option><option>التقنية</option><option>التسويق</option><option>المبيعات</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>المسمى الوظيفي</label><input type="text" id="in-role" placeholder="مشرف"></div>
-                <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="in-phone" placeholder="05xxxxxxx"></div>
-                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="in-email" placeholder="name@presto.app"></div>
+                <div class="form-group"><label>الاسم الكامل</label><input type="text" id="in-name"></div>
+                <div class="form-group"><label>الرقم الوظيفي</label><input type="text" id="in-id"></div>
+                <div class="form-group"><label>القسم</label><select id="in-dept"><option>العمليات</option><option>الإدارة</option><option>التقنية</option><option>التسويق</option><option>المبيعات</option></select></div>
+                <div class="form-group"><label>المسمى الوظيفي</label><input type="text" id="in-role"></div>
+                <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="in-phone"></div>
+                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="in-email"></div>
                 <div class="form-group"><label>تاريخ الميلاد</label><input type="date" id="in-dob"></div>
                 <div class="form-group"><label>تاريخ الانضمام</label><input type="date" id="in-joining"></div>
-                <div class="form-group"><label>المرتب الشهري</label><input type="number" id="in-salary" placeholder="0.00"></div>
-                <div class="form-group" style="grid-column: span 2;"><label>العنوان السكني</label><input type="text" id="in-address" placeholder="المدينة، الحي، الشارع"></div>
-                <div class="form-group">
-                    <label>فصيلة الدم</label>
-                    <select id="in-blood">
-                        <option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option>
-                        <option value="O+">O+</option><option value="O-">O-</option><option value="AB+">AB+</option><option value="AB-">AB-</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>المرتب الشهري</label><input type="number" id="in-salary"></div>
+                <div class="form-group" style="grid-column: span 2;"><label>العنوان السكني</label><input type="text" id="in-address"></div>
+                <div class="form-group"><label>فصيلة الدم</label><select id="in-blood"><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="O+">O+</option><option value="O-">O-</option><option value="AB+">AB+</option><option value="AB-">AB-</option></select></div>
             </div>
-
             <h4 style="margin-bottom:15px; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">جدول الدوام الإسبوعي</h4>
             <div id="schedule-inputs" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;"></div>
-            
             <div style="display: flex; gap: 15px; margin-top: 30px;">
                 <button onclick="saveEmployee()" id="btn-save" class="btn-main" style="flex: 2; justify-content:center;">حفظ البيانات</button>
                 <button onclick="toggleModal(false)" style="flex: 1; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700;">إلغاء</button>
@@ -333,14 +350,12 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
-        // 1. تحديد إعدادات Firebase بذكاء
         let firebaseConfig;
         let appId;
 
-        // أولوية 1: استخدام إعدادات البيئة الحالية (لإصلاح الخطأ في نافذة المعاينة)
         if (typeof __firebase_config !== 'undefined') {
             try {
                 firebaseConfig = JSON.parse(__firebase_config);
@@ -348,7 +363,6 @@
             } catch (e) { console.error("Error parsing env config", e); }
         }
 
-        // أولوية 2: السقوط للإعدادات الخاصة بك إذا لم تتوفر إعدادات البيئة (عند النشر على GitHub)
         if (!firebaseConfig) {
             firebaseConfig = {
                 apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
@@ -360,10 +374,9 @@
                 appId: "1:498775599728:web:b195dea758f3cf415162b5",
                 measurementId: "G-YQTYHQ40NN"
             };
-            appId = 'my-hr-app'; // معرف ثابت للتطبيق عند النشر
+            appId = 'my-hr-app'; 
         }
 
-        // تهيئة التطبيق
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -373,42 +386,98 @@
 
         let currentUser = null;
         let allEmployees = [];
+        let unsubscribeSnapshot = null;
 
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) { 
-                console.error("Auth Error:", error);
-                const loader = document.getElementById('loading-screen');
-                if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-                    if (loader) {
-                        loader.innerHTML = '<div style="text-align:center; padding:20px;"><h3>خطأ في التوثيق</h3><p>يرجى تفعيل Anonymous Auth في Firebase</p></div>';
-                    }
-                }
-            }
-        }
+        // --- Auth Logic ---
 
         onAuthStateChanged(auth, (user) => {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loginView = document.getElementById('login-view');
+            const mainApp = document.getElementById('main-app');
+
             if (user) {
+                // User is signed in
                 currentUser = user;
-                console.log("Logged in as:", user.uid);
+                console.log("User logged in:", user.email);
+                
+                // UI Updates
+                loadingScreen.style.display = 'none';
+                loginView.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                
+                // Set User Email in header
+                document.getElementById('user-email-display').innerText = user.email.split('@')[0];
+
                 startListening();
+            } else {
+                // User is signed out
+                currentUser = null;
+                console.log("User logged out");
+
+                // Stop listening to Firestore
+                if(unsubscribeSnapshot) {
+                    unsubscribeSnapshot();
+                    unsubscribeSnapshot = null;
+                }
+
+                // UI Updates
+                loadingScreen.style.display = 'none';
+                mainApp.classList.add('hidden');
+                loginView.classList.remove('hidden');
             }
         });
+
+        window.loginUser = async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn-action');
+
+            if (!email || !password) {
+                errorEl.innerText = "يرجى ملء جميع الحقول";
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.innerText = "جاري التحقق...";
+            btn.disabled = true;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Redirect happens automatically via onAuthStateChanged
+            } catch (error) {
+                console.error(error);
+                let msg = "حدث خطأ في تسجيل الدخول";
+                if (error.code === 'auth/invalid-email') msg = "البريد الإلكتروني غير صحيح";
+                if (error.code === 'auth/user-not-found') msg = "المستخدم غير موجود";
+                if (error.code === 'auth/wrong-password') msg = "كلمة المرور خاطئة";
+                if (error.code === 'auth/invalid-credential') msg = "بيانات الدخول غير صحيحة";
+                
+                errorEl.innerText = msg;
+                errorEl.style.display = 'block';
+                btn.innerText = "دخول";
+                btn.disabled = false;
+            }
+        };
+
+        window.logoutUser = async () => {
+            if(confirm("هل تريد تسجيل الخروج؟")) {
+                await signOut(auth);
+                location.reload(); // Refresh to clear memory
+            }
+        };
+
+        // --- App Logic ---
 
         function startListening() {
             if (!currentUser) return;
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
-            onSnapshot(query(colRef), (snap) => {
+            // Store unsubscribe function to stop listener on logout
+            unsubscribeSnapshot = onSnapshot(query(colRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
-                const loader = document.getElementById('loading-screen');
-                if (loader) loader.style.display = 'none';
+                
                 const profileView = document.getElementById('view-profile');
                 if (!profileView.classList.contains('hidden')) {
                    const activeId = document.getElementById('edit-doc-id').value;
@@ -419,6 +488,8 @@
             });
         }
 
+        // --- (Rest of the helper functions unchanged) ---
+        
         function calculateBalance(joiningDate, takenDays) {
             if (!joiningDate) return 0;
             const start = new Date(joiningDate);
@@ -432,51 +503,32 @@
         function updateBirthdayList() {
             const listEl = document.getElementById('birthday-list');
             if (!listEl) return;
-
             const now = new Date();
             const currentMonth = now.getMonth() + 1; 
             const currentDay = now.getDate(); 
-
             let htmlContent = '';
             let count = 0;
-
             const birthdayEmployees = allEmployees.filter(emp => {
                 if (!emp.dob) return false;
                 const parts = emp.dob.split('-'); 
                 const bMonth = parseInt(parts[1]); 
                 return bMonth === currentMonth;
             });
-
             birthdayEmployees.sort((a, b) => {
                 const dayA = parseInt(a.dob.split('-')[2]);
                 const dayB = parseInt(b.dob.split('-')[2]);
                 return dayA - dayB;
             });
-
             birthdayEmployees.forEach(emp => {
                 const parts = emp.dob.split('-');
                 const bDay = parseInt(parts[2]);
                 const isToday = (bDay === currentDay);
-                
                 const bgStyle = isToday ? 'background: linear-gradient(to left, #fff0eb, #ffffff); border-right: 3px solid var(--primary);' : 'background: var(--bg-main);';
                 const icon = isToday ? '🎉' : '🎂';
-                const dateBadge = isToday 
-                    ? `<span style="color:var(--primary); font-weight:800; font-size:10px;">اليوم!</span>` 
-                    : `<span style="font-size:11px; font-weight:700; color:var(--text-muted);">${bDay}/${currentMonth}</span>`;
-
-                htmlContent += `
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:10px; border-radius:12px; ${bgStyle} transition:transform 0.2s;">
-                        <div style="width:32px; height:32px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${icon}</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:bold; font-size:12px; color:var(--text-main);">${emp.name}</div>
-                            <div style="font-size:10px; color:var(--text-muted);">${emp.dept}</div>
-                        </div>
-                        <div>${dateBadge}</div>
-                    </div>
-                `;
+                const dateBadge = isToday ? `<span style="color:var(--primary); font-weight:800; font-size:10px;">اليوم!</span>` : `<span style="font-size:11px; font-weight:700; color:var(--text-muted);">${bDay}/${currentMonth}</span>`;
+                htmlContent += `<div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:10px; border-radius:12px; ${bgStyle} transition:transform 0.2s;"><div style="width:32px; height:32px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${icon}</div><div style="flex:1;"><div style="font-weight:bold; font-size:12px; color:var(--text-main);">${emp.name}</div><div style="font-size:10px; color:var(--text-muted);">${emp.dept}</div></div><div>${dateBadge}</div></div>`;
                 count++;
             });
-
             if (count > 0) {
                 listEl.innerHTML = htmlContent;
                 const cardTitle = listEl.parentElement.querySelector('h4');
@@ -490,26 +542,13 @@
             const tableBody = document.getElementById('employeesTableBody');
             const countEl = document.getElementById('count-home');
             const scheduleRows = document.querySelectorAll('#home-schedule-body tr');
-            
             if(tableBody) tableBody.innerHTML = "";
             if (countEl) countEl.innerText = allEmployees.length;
-
             scheduleRows.forEach(r => { for(let i=1; i<8; i++) r.cells[i].innerHTML = ""; });
-
             allEmployees.forEach(data => {
                 if(tableBody) {
-                    tableBody.innerHTML += `<tr>
-                        <td style="font-weight:800; color:var(--primary)">${data.empId || '---'}</td>
-                        <td style="font-weight:700">${data.name || '---'}</td>
-                        <td>${data.dept || '---'}</td>
-                        <td>${data.role || '---'}</td>
-                        <td>
-                            <button onclick="viewProfile('${data.id}')" class="btn-action btn-view"><i class="fas fa-eye"></i></button>
-                            <button onclick="deleteEmp('${data.id}')" class="btn-action btn-delete"><i class="fas fa-trash-alt"></i></button>
-                        </td>
-                    </tr>`;
+                    tableBody.innerHTML += `<tr><td style="font-weight:800; color:var(--primary)">${data.empId || '---'}</td><td style="font-weight:700">${data.name || '---'}</td><td>${data.dept || '---'}</td><td>${data.role || '---'}</td><td><button onclick="viewProfile('${data.id}')" class="btn-action btn-view"><i class="fas fa-eye"></i></button><button onclick="deleteEmp('${data.id}')" class="btn-action btn-delete"><i class="fas fa-trash-alt"></i></button></td></tr>`;
                 }
-
                 if (data.schedule) {
                     days.forEach((day, idx) => {
                         const shift = data.schedule[day];
@@ -520,7 +559,6 @@
                     });
                 }
             });
-
             updateDashboardStats();
             updateBirthdayList();
         }
@@ -531,7 +569,6 @@
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
-            
             try {
                 const leavesRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
                 const leavesQuery = query(leavesRef, where('date', '==', todayStr));
@@ -549,143 +586,35 @@
 
                 const currentDayIndex = now.getDay(); 
                 const arabicDay = days[currentDayIndex];
-                
                 let onlineCount = 0;
-                
                 allEmployees.forEach(emp => {
                     if (emp.schedule && emp.schedule[arabicDay] && emp.schedule[arabicDay] !== 'عطلة') {
                         onlineCount++;
                     }
                 });
-
                 const onlineEl = document.getElementById('online-count');
                 if (onlineEl) onlineEl.innerText = onlineCount;
-
-            } catch (error) {
-                console.error("خطأ في جلب الإحصائيات:", error);
-            }
-        }
-
-        function isWorkingNow(shiftString) {
-            if (!shiftString || shiftString === 'عطلة') return false;
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            const [startStr, endStr] = shiftString.split(' - ');
-            const parseTime = (t) => {
-                const [h, m] = t.split(':').map(Number);
-                return h * 60 + m;
-            };
-            const startMinutes = parseTime(startStr);
-            const endMinutes = parseTime(endStr);
-            if (endMinutes < startMinutes) {
-                return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
-            } else {
-                return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
-            }
+            } catch (error) { console.error("Stats Error:", error); }
         }
 
         window.viewProfile = async (id) => {
             const emp = allEmployees.find(e => e.id === id);
             if (!emp) return;
             document.getElementById('edit-doc-id').value = id;
-
             const leaves = await fetchActionData('leaves', id);
             const permissions = await fetchActionData('permissions', id);
             const overtime = await fetchActionData('overtime', id);
             const tasks = await fetchActionData('tasks', id);
             const warnings = await fetchActionData('warnings', id);
-
             let takenDays = 0;
-            leaves.forEach(l => {
-                if (l.type === 'سنوية' || l.type === 'طارئة') {
-                    takenDays += parseFloat(l.daysCount || 0);
-                }
-            });
+            leaves.forEach(l => { if (l.type === 'سنوية' || l.type === 'طارئة') takenDays += parseFloat(l.daysCount || 0); });
             const currentBalance = calculateBalance(emp.joining, takenDays);
-
             const profileContent = document.getElementById('profile-content');
             profileContent.innerHTML = `
-                <div class="profile-header">
-                    <button onclick="editProfile('${emp.id}')" class="btn-edit-float"><i class="fas fa-edit"></i> تعديل الملف</button>
-                    <div class="profile-avatar">${(emp.name || '?').charAt(0)}</div>
-                    <div>
-                        <h2 style="margin:0; font-size: 28px;">${emp.name}</h2>
-                        <span style="color:var(--primary); font-weight:700;">${emp.role} • ${emp.dept}</span>
-                    </div>
-                    <div style="margin-right:auto;" class="balance-card">
-                        <span style="font-size:12px; opacity:0.9;">رصيد الإجازات المتاح</span>
-                        <span class="balance-val">${currentBalance} يوم</span>
-                    </div>
-                </div>
-
-                <div class="action-grid">
-                    <div class="action-card-btn" onclick="openActionModal('leave', '${emp.id}', ${currentBalance})"><i class="fas fa-plane-departure" style="color:#e67e22"></i><span>طلب إجازة</span></div>
-                    <div class="action-card-btn" onclick="openActionModal('permission', '${emp.id}')"><i class="fas fa-clock" style="color:#3498db"></i><span>طلب إذن</span></div>
-                    <div class="action-card-btn" onclick="openActionModal('overtime', '${emp.id}')"><i class="fas fa-plus-circle" style="color:#2ecc71"></i><span>عمل إضافي</span></div>
-                    <div class="action-card-btn" onclick="openActionModal('task', '${emp.id}')"><i class="fas fa-briefcase" style="color:#9b59b6"></i><span>مهمة عمل</span></div>
-                    <div class="action-card-btn" onclick="openActionModal('warning', '${emp.id}')"><i class="fas fa-exclamation-triangle" style="color:#e74c3c"></i><span>إنذار</span></div>
-                </div>
-
-                <div class="profile-info-grid" style="margin-top:30px;">
-                    <div class="profile-info-box"><span class="profile-label">الرقم الوظيفي</span><span class="profile-value">${emp.empId}</span></div>
-                    <div class="profile-info-box"><span class="profile-label">المرتب</span><span class="profile-value">${emp.salary || '0'} ريال</span></div>
-                    <div class="profile-info-box"><span class="profile-label">فصيلة الدم</span><span class="profile-value">${emp.bloodType || 'غير مسجل'}</span></div>
-                    <div class="profile-info-box"><span class="profile-label">الهاتف</span><span class="profile-value">${emp.phone || '---'}</span></div>
-                    <div class="profile-info-box"><span class="profile-label">البريد</span><span class="profile-value">${emp.email || '---'}</span></div>
-                    <div class="profile-info-box"><span class="profile-label">الانضمام</span><span class="profile-value">${emp.joining || '---'}</span></div>
-                </div>
-
-                <div class="profile-tabs-content">
-                    <div class="sub-card" style="grid-column: span 2;">
-                        <h4><i class="fas fa-calendar-check"></i> جدول الدوام الأسبوعي</h4>
-                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
-                            ${days.map(d => `<div style="background:var(--bg-card); padding:10px; border-radius:12px; text-align:center; border: 1px solid var(--border-color);">
-                                <div style="font-size:11px; color:var(--text-muted);">${d}</div>
-                                <div style="font-weight:700; font-size:11px;">${(emp.schedule && emp.schedule[d]) || '---'}</div>
-                            </div>`).join('')}
-                        </div>
-                    </div>
-
-                    <div class="sub-card">
-                        <h4><i class="fas fa-plane"></i> سجل الإجازات</h4>
-                        <table class="data-table" style="margin-top:0;">
-                            <thead><tr><th>التاريخ</th><th>النوع</th><th>الأيام</th><th>الحالة</th></tr></thead>
-                            <tbody>${leaves.map(l => `<tr><td>${l.date}</td><td>${l.type}</td><td>${l.daysCount || 1}</td><td><span class="status-badge badge-success">مقبول</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center">لا يوجد</td></tr>'}</tbody>
-                        </table>
-                    </div>
-
-                    <div class="sub-card">
-                        <h4><i class="fas fa-clock"></i> سجل الأذونات</h4>
-                        <table class="data-table" style="margin-top:0;">
-                            <thead><tr><th>التاريخ</th><th>الساعات</th><th>الحالة</th></tr></thead>
-                            <tbody>${permissions.map(p => `<tr><td>${p.date}</td><td>${p.hours} ساعة</td><td><span class="status-badge badge-success">تم</span></td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
-                        </table>
-                    </div>
-
-                    <div class="sub-card">
-                        <h4><i class="fas fa-plus-circle"></i> العمل الإضافي</h4>
-                        <table class="data-table" style="margin-top:0;">
-                            <thead><tr><th>التاريخ</th><th>الساعات</th><th>السبب</th></tr></thead>
-                            <tbody>${overtime.map(o => `<tr><td>${o.date}</td><td>${o.hours} ساعة</td><td>${o.reason}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
-                        </table>
-                    </div>
-
-                    <div class="sub-card">
-                        <h4><i class="fas fa-tasks"></i> مهمات العمل</h4>
-                        <table class="data-table" style="margin-top:0;">
-                            <thead><tr><th>التاريخ</th><th>المهمة</th></tr></thead>
-                            <tbody>${tasks.map(t => `<tr><td>${t.date}</td><td>${t.type}</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center">لا يوجد</td></tr>'}</tbody>
-                        </table>
-                    </div>
-
-                    <div class="sub-card" style="grid-column: span 2;">
-                        <h4><i class="fas fa-exclamation-triangle"></i> سجل الإنذارات</h4>
-                        <table class="data-table" style="margin-top:0;">
-                            <thead><tr><th>التاريخ</th><th>نوع الإنذار</th><th>التفاصيل</th></tr></thead>
-                            <tbody>${warnings.map(w => `<tr><td>${w.date}</td><td>${w.type}</td><td>بسبب مخالفة اللوائح</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="profile-header"><button onclick="editProfile('${emp.id}')" class="btn-edit-float"><i class="fas fa-edit"></i> تعديل الملف</button><div class="profile-avatar">${(emp.name || '?').charAt(0)}</div><div><h2 style="margin:0; font-size: 28px;">${emp.name}</h2><span style="color:var(--primary); font-weight:700;">${emp.role} • ${emp.dept}</span></div><div style="margin-right:auto;" class="balance-card"><span style="font-size:12px; opacity:0.9;">رصيد الإجازات المتاح</span><span class="balance-val">${currentBalance} يوم</span></div></div>
+                <div class="action-grid"><div class="action-card-btn" onclick="openActionModal('leave', '${emp.id}', ${currentBalance})"><i class="fas fa-plane-departure" style="color:#e67e22"></i><span>طلب إجازة</span></div><div class="action-card-btn" onclick="openActionModal('permission', '${emp.id}')"><i class="fas fa-clock" style="color:#3498db"></i><span>طلب إذن</span></div><div class="action-card-btn" onclick="openActionModal('overtime', '${emp.id}')"><i class="fas fa-plus-circle" style="color:#2ecc71"></i><span>عمل إضافي</span></div><div class="action-card-btn" onclick="openActionModal('task', '${emp.id}')"><i class="fas fa-briefcase" style="color:#9b59b6"></i><span>مهمة عمل</span></div><div class="action-card-btn" onclick="openActionModal('warning', '${emp.id}')"><i class="fas fa-exclamation-triangle" style="color:#e74c3c"></i><span>إنذار</span></div></div>
+                <div class="profile-info-grid" style="margin-top:30px;"><div class="profile-info-box"><span class="profile-label">الرقم الوظيفي</span><span class="profile-value">${emp.empId}</span></div><div class="profile-info-box"><span class="profile-label">المرتب</span><span class="profile-value">${emp.salary || '0'} ريال</span></div><div class="profile-info-box"><span class="profile-label">فصيلة الدم</span><span class="profile-value">${emp.bloodType || 'غير مسجل'}</span></div><div class="profile-info-box"><span class="profile-label">الهاتف</span><span class="profile-value">${emp.phone || '---'}</span></div><div class="profile-info-box"><span class="profile-label">البريد</span><span class="profile-value">${emp.email || '---'}</span></div><div class="profile-info-box"><span class="profile-label">الانضمام</span><span class="profile-value">${emp.joining || '---'}</span></div></div>
+                <div class="profile-tabs-content"><div class="sub-card" style="grid-column: span 2;"><h4><i class="fas fa-calendar-check"></i> جدول الدوام الأسبوعي</h4><div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">${days.map(d => `<div style="background:var(--bg-card); padding:10px; border-radius:12px; text-align:center; border: 1px solid var(--border-color);"><div style="font-size:11px; color:var(--text-muted);">${d}</div><div style="font-weight:700; font-size:11px;">${(emp.schedule && emp.schedule[d]) || '---'}</div></div>`).join('')}</div></div><div class="sub-card"><h4><i class="fas fa-plane"></i> سجل الإجازات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>النوع</th><th>الأيام</th><th>الحالة</th></tr></thead><tbody>${leaves.map(l => `<tr><td>${l.date}</td><td>${l.type}</td><td>${l.daysCount || 1}</td><td><span class="status-badge badge-success">مقبول</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-clock"></i> سجل الأذونات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>الساعات</th><th>الحالة</th></tr></thead><tbody>${permissions.map(p => `<tr><td>${p.date}</td><td>${p.hours} ساعة</td><td><span class="status-badge badge-success">تم</span></td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-plus-circle"></i> العمل الإضافي</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>الساعات</th><th>السبب</th></tr></thead><tbody>${overtime.map(o => `<tr><td>${o.date}</td><td>${o.hours} ساعة</td><td>${o.reason}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-tasks"></i> مهمات العمل</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>المهمة</th></tr></thead><tbody>${tasks.map(t => `<tr><td>${t.date}</td><td>${t.type}</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card" style="grid-column: span 2;"><h4><i class="fas fa-exclamation-triangle"></i> سجل الإنذارات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>نوع الإنذار</th><th>التفاصيل</th></tr></thead><tbody>${warnings.map(w => `<tr><td>${w.date}</td><td>${w.type}</td><td>بسبب مخالفة اللوائح</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div></div>
             `;
             showView('profile');
         };
@@ -694,67 +623,46 @@
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
             const snap = await getDocs(query(colRef));
             let results = [];
-            snap.forEach(d => {
-                const data = d.data();
-                if (data.empDocId === empDocId) results.push(data);
-            });
+            snap.forEach(d => { const data = d.data(); if (data.empDocId === empDocId) results.push(data); });
             return results.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
+        async function calculateMonthlyUnits(collectionName, empDocId) {
+            const now = new Date();
+            let start, end;
+            if (now.getDate() >= 21) { start = new Date(now.getFullYear(), now.getMonth(), 21); end = new Date(now.getFullYear(), now.getMonth() + 1, 20); } else { start = new Date(now.getFullYear(), now.getMonth() - 1, 21); end = new Date(now.getFullYear(), now.getMonth(), 20); }
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+            const snap = await getDocs(query(colRef));
+            let total = 0;
+            snap.forEach(d => { const data = d.data(); if (data.empDocId === empDocId && data.date) { const recordDate = new Date(data.date); if (recordDate >= start && recordDate <= end) total += parseFloat(data.hours || 0); } });
+            return total;
+        }
+
+        // --- Modals & Data Actions ---
+        
         window.openActionModal = async (type, empDocId, currentBalance = 0) => {
             const modal = document.getElementById('actionModal');
             const title = document.getElementById('action-modal-title');
             const body = document.getElementById('action-modal-body');
             const saveBtn = document.getElementById('btn-action-save');
-            
-            modal.style.display = 'flex';
-            body.innerHTML = "";
+            modal.style.display = 'flex'; body.innerHTML = "";
             
             if (type === 'leave') {
                 title.innerText = "طلب إجازة جديدة";
-                body.innerHTML = `
-                    <div class="form-group">
-                        <label>نوع الإجازة</label>
-                        <select id="act-leave-type">
-                            <option value="سنوية">سنوية (تخصم من الرصيد)</option>
-                            <option value="طارئة">طارئة (تخصم من الرصيد)</option>
-                            <option value="مرضية">مرضية (لا تخصم)</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
-                    <div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div>
-                    <div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>نوع الإجازة</label><select id="act-leave-type"><option value="سنوية">سنوية (تخصم من الرصيد)</option><option value="طارئة">طارئة (تخصم من الرصيد)</option><option value="مرضية">مرضية (لا تخصم)</option></select></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div><div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>`;
                 saveBtn.onclick = () => {
                     const lType = document.getElementById('act-leave-type').value;
                     const lDays = parseFloat(document.getElementById('act-days-count').value);
                     const lDate = document.getElementById('act-date').value;
-
-                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) {
-                        alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`);
-                        return;
-                    }
-
+                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) { alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`); return; }
                     if (!lDate) return alert("يرجى تحديد التاريخ");
-
-                    saveAction('leaves', empDocId, { 
-                        type: lType,
-                        date: lDate,
-                        daysCount: lDays,
-                        note: document.getElementById('act-note').value
-                    });
+                    saveAction('leaves', empDocId, { type: lType, date: lDate, daysCount: lDays, note: document.getElementById('act-note').value });
                 };
             } 
             else if (type === 'permission') {
                 title.innerText = "طلب إذن خروج";
                 const usedPerms = await calculateMonthlyUnits('permissions', empDocId);
-                body.innerHTML = `
-                    <div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">
-                        رصيد الشهر الحالي: <span style="font-weight:700">${usedPerms} / 5 ساعات</span>
-                    </div>
-                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
-                    <div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" max="5" placeholder="مثال: 2"></div>
-                `;
+                body.innerHTML = `<div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">رصيد الشهر الحالي: <span style="font-weight:700">${usedPerms} / 5 ساعات</span></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" max="5" placeholder="مثال: 2"></div>`;
                 saveBtn.onclick = () => {
                     const hrs = parseFloat(document.getElementById('act-hours').value);
                     if (usedPerms + hrs > 5) return alert("عذراً، الرصيد المتبقي لا يكفي");
@@ -764,19 +672,7 @@
             else if (type === 'overtime') {
                 title.innerText = "تسجيل عمل إضافي";
                 const usedOvertime = await calculateMonthlyUnits('overtime', empDocId);
-                body.innerHTML = `
-                    <div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">
-                        رصيد الشهر الحالي: <span style="font-weight:700">${usedOvertime} / 20 ساعة</span>
-                    </div>
-                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
-                    <div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" placeholder="مثال: 4"></div>
-                    <div class="form-group">
-                        <label>السبب</label>
-                        <select id="act-reason">
-                            <option>نقص إذن</option><option>نقص إجازة</option><option>ضغط عمل</option><option>أحوال جوية</option>
-                        </select>
-                    </div>
-                `;
+                body.innerHTML = `<div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">رصيد الشهر الحالي: <span style="font-weight:700">${usedOvertime} / 20 ساعة</span></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" placeholder="مثال: 4"></div><div class="form-group"><label>السبب</label><select id="act-reason"><option>نقص إذن</option><option>نقص إجازة</option><option>ضغط عمل</option><option>أحوال جوية</option></select></div>`;
                 saveBtn.onclick = () => {
                     const hrs = parseFloat(document.getElementById('act-hours').value);
                     if (usedOvertime + hrs > 20) return alert("عذراً، رصيد الإضافي المتبقي لا يكفي");
@@ -785,56 +681,17 @@
             }
             else if (type === 'task') {
                 title.innerText = "إسناد مهمة عمل";
-                body.innerHTML = `
-                    <div class="form-group">
-                        <label>نوع المهمة</label>
-                        <select id="act-task-type">
-                            <option>العمليات</option><option>مكالمات</option><option>رسائل البريستومان</option><option>اكتيف</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>نوع المهمة</label><select id="act-task-type"><option>العمليات</option><option>مكالمات</option><option>رسائل البريستومان</option><option>اكتيف</option></select></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>`;
                 saveBtn.onclick = () => saveAction('tasks', empDocId, { type: document.getElementById('act-task-type').value, date: document.getElementById('act-date').value });
             }
             else if (type === 'warning') {
                 title.innerText = "إصدار إنذار إداري";
-                body.innerHTML = `
-                    <div class="form-group">
-                        <label>نوع الإنذار</label>
-                        <select id="act-warn-type">
-                            <option>لفت نظر</option><option>إنذار شفهي</option><option>تأخير</option><option>إجراء جزائي</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>تاريخ الإنذار</label><input type="date" id="act-date"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>نوع الإنذار</label><select id="act-warn-type"><option>لفت نظر</option><option>إنذار شفهي</option><option>تأخير</option><option>إجراء جزائي</option></select></div><div class="form-group"><label>تاريخ الإنذار</label><input type="date" id="act-date"></div>`;
                 saveBtn.onclick = () => saveAction('warnings', empDocId, { type: document.getElementById('act-warn-type').value, date: document.getElementById('act-date').value });
             }
         };
 
         window.closeActionModal = () => document.getElementById('actionModal').style.display = 'none';
-
-        async function calculateMonthlyUnits(collectionName, empDocId) {
-            const now = new Date();
-            let start, end;
-            if (now.getDate() >= 21) {
-                start = new Date(now.getFullYear(), now.getMonth(), 21);
-                end = new Date(now.getFullYear(), now.getMonth() + 1, 20);
-            } else {
-                start = new Date(now.getFullYear(), now.getMonth() - 1, 21);
-                end = new Date(now.getFullYear(), now.getMonth(), 20);
-            }
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
-            const snap = await getDocs(query(colRef));
-            let total = 0;
-            snap.forEach(d => {
-                const data = d.data();
-                if (data.empDocId === empDocId && data.date) {
-                    const recordDate = new Date(data.date);
-                    if (recordDate >= start && recordDate <= end) total += parseFloat(data.hours || 0);
-                }
-            });
-            return total;
-        }
 
         async function saveAction(collectionName, empDocId, data) {
             try {
@@ -843,15 +700,11 @@
                 closeActionModal();
                 showToast("تم تسجيل الطلب بنجاح");
                 viewProfile(empDocId);
-            } catch (e) { 
-                console.error(e); 
-                alert("حدث خطأ في الحفظ. تأكد من اتصال الإنترنت والصلاحيات.");
-            }
+            } catch (e) { console.error(e); alert("حدث خطأ في الحفظ. تأكد من اتصال الإنترنت والصلاحيات."); }
         }
 
         window.editProfile = (id) => {
-            const emp = allEmployees.find(e => e.id === id);
-            if(!emp) return;
+            const emp = allEmployees.find(e => e.id === id); if(!emp) return;
             document.getElementById('modal-title').innerHTML = `<i class="fas fa-user-edit"></i> تعديل بيانات: ${emp.name}`;
             document.getElementById('edit-doc-id').value = id;
             document.getElementById('in-name').value = emp.name || "";
@@ -866,12 +719,7 @@
             document.getElementById('in-address').value = emp.address || "";
             document.getElementById('in-blood').value = emp.bloodType || "A+";
             toggleModal(true);
-            setTimeout(() => {
-                days.forEach((day, i) => {
-                    const el = document.getElementById(`day-input-${i}`);
-                    if(el && emp.schedule && emp.schedule[day]) el.value = emp.schedule[day];
-                });
-            }, 50);
+            setTimeout(() => { days.forEach((day, i) => { const el = document.getElementById(`day-input-${i}`); if(el && emp.schedule && emp.schedule[day]) el.value = emp.schedule[day]; }); }, 50);
         };
 
         window.openModalForAdd = () => {
@@ -886,249 +734,93 @@
             const empId = document.getElementById('in-id').value;
             const editId = document.getElementById('edit-doc-id').value;
             if (!name || !empId) return alert("الاسم والرقم الوظيفي مطلوبان");
-            const sched = {};
-            days.forEach((day, i) => sched[day] = document.getElementById(`day-input-${i}`).value);
-            const empData = {
-                name, empId, dept: document.getElementById('in-dept').value,
-                role: document.getElementById('in-role').value, phone: document.getElementById('in-phone').value,
-                email: document.getElementById('in-email').value, dob: document.getElementById('in-dob').value,
-                joining: document.getElementById('in-joining').value, salary: document.getElementById('in-salary').value,
-                address: document.getElementById('in-address').value, bloodType: document.getElementById('in-blood').value,
-                schedule: sched, updatedAt: serverTimestamp()
-            };
+            const sched = {}; days.forEach((day, i) => sched[day] = document.getElementById(`day-input-${i}`).value);
+            const empData = { name, empId, dept: document.getElementById('in-dept').value, role: document.getElementById('in-role').value, phone: document.getElementById('in-phone').value, email: document.getElementById('in-email').value, dob: document.getElementById('in-dob').value, joining: document.getElementById('in-joining').value, salary: document.getElementById('in-salary').value, address: document.getElementById('in-address').value, bloodType: document.getElementById('in-blood').value, schedule: sched, updatedAt: serverTimestamp() };
             try {
                 if (editId) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees_v7', editId), empData);
                 else { empData.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7'), empData); }
-                toggleModal(false);
-                showToast("تم الحفظ بنجاح");
-            } catch (e) { 
-                console.error(e);
-                alert("فشل الحفظ. تأكد من الصلاحيات.");
-            }
+                toggleModal(false); showToast("تم الحفظ بنجاح");
+            } catch (e) { console.error(e); alert("فشل الحفظ. تأكد من الصلاحيات."); }
         };
 
-        window.deleteEmp = async (id) => {
-            if (confirm("حذف الموظف نهائياً؟")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees_v7', id));
-                showToast("تم الحذف");
-            }
-        };
+        window.deleteEmp = async (id) => { if (confirm("حذف الموظف نهائياً؟")) { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees_v7', id)); showToast("تم الحذف"); } };
 
         window.toggleModal = (show) => {
             const modal = document.getElementById('employeeModal');
             if (modal) modal.style.display = show ? 'flex' : 'none';
-            if (show) {
-                const container = document.getElementById('schedule-inputs');
-                if (container) container.innerHTML = days.map((day, i) => `<div class="form-group"><label>${day}</label><select id="day-input-${i}">${shifts.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="عطلة">عطلة</option></select></div>`).join('');
-            }
+            if (show) { const container = document.getElementById('schedule-inputs'); if (container) container.innerHTML = days.map((day, i) => `<div class="form-group"><label>${day}</label><select id="day-input-${i}">${shifts.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="عطلة">عطلة</option></select></div>`).join(''); }
         };
 
         window.showView = (v) => {
-            ['home', 'employees', 'profile', 'overtime'].forEach(view => {
-                const el = document.getElementById(`view-${view}`);
-                if (el) el.className = (v === view ? '' : 'hidden');
-            });
-            const sideEl = document.getElementById('side-widgets');
-            if (sideEl) sideEl.className = (v === 'home' ? 'side-widgets' : 'hidden');
-            
+            ['home', 'employees', 'profile', 'overtime'].forEach(view => { const el = document.getElementById(`view-${view}`); if (el) el.className = (v === view ? '' : 'hidden'); });
+            const sideEl = document.getElementById('side-widgets'); if (sideEl) sideEl.className = (v === 'home' ? 'side-widgets' : 'hidden');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            const activeNav = document.getElementById(`link-${v === 'profile' ? 'employees' : v}`);
-            if(activeNav) activeNav.classList.add('active');
-            
-            const titleEl = document.getElementById('page-title');
-            const titles = {
-                'home': 'لوحة التحكم',
-                'employees': 'سجل الموظفين',
-                'profile': 'الملف الشخصي',
-                'overtime': 'احتساب العمل الإضافي'
-            };
-            if (titleEl) titleEl.innerText = titles[v] || 'Presto HR';
-            
-            const containerEl = document.getElementById('content-container');
-            if (containerEl) containerEl.className = (v === 'home' ? 'content-area' : 'content-area full-width');
+            const activeNav = document.getElementById(`link-${v === 'profile' ? 'employees' : v}`); if(activeNav) activeNav.classList.add('active');
+            const titleEl = document.getElementById('page-title'); const titles = { 'home': 'لوحة التحكم', 'employees': 'سجل الموظفين', 'profile': 'الملف الشخصي', 'overtime': 'احتساب العمل الإضافي' }; if (titleEl) titleEl.innerText = titles[v] || 'Presto HR';
+            const containerEl = document.getElementById('content-container'); if (containerEl) containerEl.className = (v === 'home' ? 'content-area' : 'content-area full-width');
         };
 
-        window.toggleTheme = () => {
-            const current = document.body.getAttribute('data-theme');
-            document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
-        };
+        window.toggleTheme = () => { const current = document.body.getAttribute('data-theme'); document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark'); };
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            if (t) {
-                t.innerText = msg; t.style.display = 'block';
-                setTimeout(() => t.style.display = 'none', 3000);
-            }
-        }
+        function showToast(msg) { const t = document.getElementById('toast'); if (t) { t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); } }
 
+        // --- Export/Import ---
         window.exportData = async () => {
             if(!confirm("هل تريد تحميل نسخة احتياطية من جميع البيانات؟")) return;
-            
             showToast("جاري تحضير البيانات...");
-            
             try {
                 const collections = ['employees_v7', 'leaves', 'permissions', 'overtime', 'tasks', 'warnings'];
                 const data = {};
-
-                for (const colName of collections) {
-                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
-                    const snap = await getDocs(query(colRef));
-                    data[colName] = [];
-                    snap.forEach(doc => {
-                        data[colName].push({ ...doc.data(), _id: doc.id }); 
-                    });
-                }
-
+                for (const colName of collections) { const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName); const snap = await getDocs(query(colRef)); data[colName] = []; snap.forEach(doc => { data[colName].push({ ...doc.data(), _id: doc.id }); }); }
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
-                const date = new Date().toISOString().slice(0,10);
-                downloadAnchorNode.setAttribute("download", `Presto_Backup_${date}.json`);
-                document.body.appendChild(downloadAnchorNode);
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
-                
+                const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); const date = new Date().toISOString().slice(0,10); downloadAnchorNode.setAttribute("download", `Presto_Backup_${date}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
                 showToast("تم تحميل النسخة الاحتياطية");
-
-            } catch (e) {
-                console.error(e);
-                alert("حدث خطأ أثناء التصدير: " + e.message);
-            }
+            } catch (e) { console.error(e); alert("حدث خطأ أثناء التصدير: " + e.message); }
         };
 
         window.importData = async (input) => {
-            const file = input.files[0];
-            if (!file) return;
-
-            if(!confirm("تحذير: سيتم إضافة البيانات من الملف إلى النظام. هل أنت متأكد؟")) {
-                input.value = ''; 
-                return;
-            }
-
+            const file = input.files[0]; if (!file) return;
+            if(!confirm("تحذير: سيتم إضافة البيانات من الملف إلى النظام. هل أنت متأكد؟")) { input.value = ''; return; }
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    const data = JSON.parse(e.target.result);
-                    let count = 0;
-
-                    for (const [colName, items] of Object.entries(data)) {
-                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
-                        
-                        for (const item of items) {
-                            const { _id, ...docData } = item; 
-                            docData.importedAt = serverTimestamp();
-                            await addDoc(colRef, docData);
-                            count++;
-                        }
-                    }
-
-                    showToast(`تم استيراد ${count} سجل بنجاح!`);
-                    setTimeout(() => location.reload(), 2000); 
-
-                } catch (err) {
-                    console.error(err);
-                    alert("الملف غير صالح أو حدث خطأ أثناء المعالجة");
-                }
+                    const data = JSON.parse(e.target.result); let count = 0;
+                    for (const [colName, items] of Object.entries(data)) { const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName); for (const item of items) { const { _id, ...docData } = item; docData.importedAt = serverTimestamp(); await addDoc(colRef, docData); count++; } }
+                    showToast(`تم استيراد ${count} سجل بنجاح!`); setTimeout(() => location.reload(), 2000);
+                } catch (err) { console.error(err); alert("الملف غير صالح أو حدث خطأ أثناء المعالجة"); }
             };
-            reader.readAsText(file);
-            input.value = ''; 
+            reader.readAsText(file); input.value = '';
         };
 
+        // --- Overtime Page ---
         let currentOvertimeData = []; 
-
         window.previewOvertimeData = async () => {
             const dateFrom = document.getElementById('overtime-from').value;
             const dateTo = document.getElementById('overtime-to').value;
             const tbody = document.getElementById('overtime-report-body');
             const totalEl = document.getElementById('total-month-hours');
-            
-            if (!dateFrom || !dateTo) {
-                return;
-            }
-
+            if (!dateFrom || !dateTo) return;
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner" style="width:30px;height:30px;border-width:3px;margin:20px auto;"></div></td></tr>';
-
-            currentOvertimeData = [];
-            let totalHours = 0;
-
+            currentOvertimeData = []; let totalHours = 0;
             try {
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'overtime');
                 const snap = await getDocs(query(colRef));
-
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    
-                    if (data.date >= dateFrom && data.date <= dateTo) {
-                        
-                        const emp = allEmployees.find(e => e.id === data.empDocId);
-                        
-                        currentOvertimeData.push({
-                            date: data.date,
-                            empName: emp ? emp.name : 'موظف محذوف',
-                            dept: emp ? emp.dept : '-',
-                            hours: parseFloat(data.hours || 0),
-                            reason: data.reason || '-'
-                        });
-                        
-                        totalHours += parseFloat(data.hours || 0);
-                    }
-                });
-
+                snap.forEach(doc => { const data = doc.data(); if (data.date >= dateFrom && data.date <= dateTo) { const emp = allEmployees.find(e => e.id === data.empDocId); currentOvertimeData.push({ date: data.date, empName: emp ? emp.name : 'موظف محذوف', dept: emp ? emp.dept : '-', hours: parseFloat(data.hours || 0), reason: data.reason || '-' }); totalHours += parseFloat(data.hours || 0); } });
                 currentOvertimeData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
                 tbody.innerHTML = "";
-                if (currentOvertimeData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">لا توجد سجلات في هذه الفترة</td></tr>';
-                } else {
-                    currentOvertimeData.forEach(item => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${item.date}</td>
-                                <td style="font-weight:bold;">${item.empName}</td>
-                                <td>${item.dept}</td>
-                                <td style="color:var(--success); font-weight:bold;">${item.hours}</td>
-                                <td>${item.reason}</td>
-                            </tr>
-                        `;
-                    });
-                }
-                
+                if (currentOvertimeData.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">لا توجد سجلات في هذه الفترة</td></tr>'; } 
+                else { currentOvertimeData.forEach(item => { tbody.innerHTML += `<tr><td>${item.date}</td><td style="font-weight:bold;">${item.empName}</td><td>${item.dept}</td><td style="color:var(--success); font-weight:bold;">${item.hours}</td><td>${item.reason}</td></tr>`; }); }
                 totalEl.innerText = totalHours;
-
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">حدث خطأ في جلب البيانات</td></tr>';
-            }
+            } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">حدث خطأ في جلب البيانات</td></tr>'; }
         };
 
         window.downloadOvertimeCSV = () => {
-            if (currentOvertimeData.length === 0) {
-                alert("لا توجد بيانات ظاهرة لتحميلها. يرجى تحديد فترة تحتوي على بيانات.");
-                return;
-            }
-
-            let csvContent = "\uFEFF"; 
-            csvContent += "التاريخ,اسم الموظف,القسم,عدد الساعات,سبب العمل الإضافي\n";
-
-            currentOvertimeData.forEach(row => {
-                const cleanReason = (row.reason || "").replace(/,/g, " ");
-                csvContent += `${row.date},${row.empName},${row.dept},${row.hours},${cleanReason}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            
-            const fromDate = document.getElementById('overtime-from').value;
-            const toDate = document.getElementById('overtime-to').value;
-            link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`);
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (currentOvertimeData.length === 0) { alert("لا توجد بيانات ظاهرة لتحميلها. يرجى تحديد فترة تحتوي على بيانات."); return; }
+            let csvContent = "\uFEFF"; csvContent += "التاريخ,اسم الموظف,القسم,عدد الساعات,سبب العمل الإضافي\n";
+            currentOvertimeData.forEach(row => { const cleanReason = (row.reason || "").replace(/,/g, " "); csvContent += `${row.date},${row.empName},${row.dept},${row.hours},${cleanReason}\n`; });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url);
+            const fromDate = document.getElementById('overtime-from').value; const toDate = document.getElementById('overtime-to').value; link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
-        initAuth();
     </script>
 </body>
 </html>
