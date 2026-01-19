@@ -405,39 +405,61 @@ function updateBirthdayList() {
             if (!listEl) return;
 
             const now = new Date();
-            const currentMonth = now.getMonth() + 1; // الأشهر في جافاسكريبت تبدأ من 0
-            const currentDay = now.getDate();
+            const currentMonth = now.getMonth() + 1; // الشهر الحالي
+            const currentDay = now.getDate(); // اليوم الحالي
 
-            let foundBirthdays = false;
             let htmlContent = '';
+            let count = 0;
 
-            allEmployees.forEach(emp => {
-                if (emp.dob) {
-                    // تاريخ الميلاد محفوظ بصيغة YYYY-MM-DD
-                    // نقوم بتقسيم النص للتأكد من اليوم والشهر بغض النظر عن السنة
-                    const parts = emp.dob.split('-'); // ["1990", "05", "20"]
-                    const bMonth = parseInt(parts[1]);
-                    const bDay = parseInt(parts[2]);
-
-                    if (bMonth === currentMonth && bDay === currentDay) {
-                        foundBirthdays = true;
-                        htmlContent += `
-                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:8px; background:var(--bg-main); border-radius:12px;">
-                                <div style="width:30px; height:30px; background:#fab1a0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">🎂</div>
-                                <div>
-                                    <div style="font-weight:bold; font-size:12px;">${emp.name}</div>
-                                    <div style="font-size:10px; color:var(--text-muted);">${emp.dept}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
+            // 1. تصفية الموظفين: مواليد هذا الشهر فقط
+            const birthdayEmployees = allEmployees.filter(emp => {
+                if (!emp.dob) return false;
+                const parts = emp.dob.split('-'); 
+                const bMonth = parseInt(parts[1]); // استخراج الشهر من التاريخ
+                return bMonth === currentMonth;
             });
 
-            if (foundBirthdays) {
+            // 2. ترتيب القائمة حسب يوم الميلاد (من الأقرب إلى الأبعد)
+            birthdayEmployees.sort((a, b) => {
+                const dayA = parseInt(a.dob.split('-')[2]);
+                const dayB = parseInt(b.dob.split('-')[2]);
+                return dayA - dayB;
+            });
+
+            // 3. إنشاء العناصر
+            birthdayEmployees.forEach(emp => {
+                const parts = emp.dob.split('-');
+                const bDay = parseInt(parts[2]);
+                const isToday = (bDay === currentDay);
+                
+                // تصميم مختلف إذا كان عيد الميلاد اليوم
+                const bgStyle = isToday ? 'background: linear-gradient(to left, #fff0eb, #ffffff); border-right: 3px solid var(--primary);' : 'background: var(--bg-main);';
+                const icon = isToday ? '🎉' : '🎂';
+                const dateBadge = isToday 
+                    ? `<span style="color:var(--primary); font-weight:800; font-size:10px;">اليوم!</span>` 
+                    : `<span style="font-size:11px; font-weight:700; color:var(--text-muted);">${bDay}/${currentMonth}</span>`;
+
+                htmlContent += `
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:10px; border-radius:12px; ${bgStyle} transition:transform 0.2s;">
+                        <div style="width:32px; height:32px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${icon}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:12px; color:var(--text-main);">${emp.name}</div>
+                            <div style="font-size:10px; color:var(--text-muted);">${emp.dept}</div>
+                        </div>
+                        <div>${dateBadge}</div>
+                    </div>
+                `;
+                count++;
+            });
+
+            // 4. عرض النتيجة
+            if (count > 0) {
                 listEl.innerHTML = htmlContent;
+                // تحديث عنوان الصندوق ليشير إلى الشهر (اختياري)
+                const cardTitle = listEl.parentElement.querySelector('h4');
+                if(cardTitle) cardTitle.innerHTML = `<i class="fas fa-birthday-cake" style="color: var(--primary);"></i> أعياد ميلاد شهر ${currentMonth}`;
             } else {
-                listEl.innerHTML = '<p style="font-size: 13px; color: var(--text-muted); text-align: center;">لا يوجد أعياد ميلاد اليوم</p>';
+                listEl.innerHTML = '<div style="text-align:center; padding:15px;"><i class="far fa-calendar-times" style="font-size:20px; color:#ccc; margin-bottom:5px; display:block;"></i><span style="font-size: 12px; color: var(--text-muted);">لا يوجد أعياد ميلاد هذا الشهر</span></div>';
             }
         }
    // 1. دالة تحديث الواجهة (بديلة للدالة التي حذفتها)
@@ -946,6 +968,7 @@ function updateBirthdayList() {
     </script>
 </body>
 </html>
+
 
 
 
