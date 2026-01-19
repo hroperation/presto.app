@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+	<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام HR المتكامل - الإصدار 17.3 (فلتر المهام الذكي)</title>
@@ -384,10 +386,17 @@
     <script>
         const apiKey = ""; 
         const weekDays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-        let employees = JSON.parse(localStorage.getItem('hr_v17_data')) || [];
-        let currentEmpId = null;
-
-        let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
+       // الكود الجديد لجلب البيانات من السحابة
+database.ref('employees/').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // تحويل البيانات من كائن (Object) إلى مصفوفة (Array) إذا لزم الأمر
+        employees = Object.values(data);
+    } else {
+        employees = [];
+    }
+    renderEmployees(); // الوظيفة التي تقوم بتحديث الجدول في واجهتك
+});
 
         function updateSystemDateUI() {
             const dateStr = systemDate.toISOString().split('T')[0];
@@ -423,7 +432,7 @@
             if(id === 'modalLeave') { document.getElementById('leaveModalTitle').innerText = "طلب إجازة جديدة"; document.getElementById('leave_index').value = ""; document.getElementById('leave_reason').value = ""; }
         }
 
-        function saveToStorage() { localStorage.setItem('hr_v17_data', JSON.stringify(employees)); }
+        function saveToStorage() { database.ref('employees/').set(employees);; }
 
         function getDatesOfCurrentWeek() {
             const baseDate = new Date(systemDate);
@@ -1103,7 +1112,30 @@ function importFullBackup(event) {
     };
     reader.readAsText(file);
 }
+		// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
+  authDomain: "hr-operation.firebaseapp.com",
+  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
+  projectId: "hr-operation",
+  storageBucket: "hr-operation.firebasestorage.app",
+  messagingSenderId: "498775599728",
+  appId: "1:498775599728:web:b195dea758f3cf415162b5",
+  measurementId: "G-YQTYHQ40NN"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
     </script>
 </body>
 </html>
+
 
