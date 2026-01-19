@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- تحديد المسار الأساسي مهم لـ GitHub Pages -->
     <base href="/presto.app/">
     
     <title>Presto HR | إدارة </title>
@@ -133,7 +132,6 @@
 </head>
 <body>
 
-    <!-- شاشة التحميل: تعتمد كلياً على نجاح الاتصال ووصول أول لقطة بيانات -->
     <div id="loading-screen" class="loading-screen">
         <div class="spinner"></div>
         <p style="margin-top: 20px; font-weight: bold;">جاري تهيئة نظام بريستو...</p>
@@ -176,7 +174,6 @@
         </header>
 
         <div id="content-container" class="content-area">
-            <!-- الرئيسية -->
             <div id="view-home">
                 <div class="stats-row">
                     <div class="stat-box"><h4>إجمالي الموظفين</h4><div class="val" id="count-home">0</div></div>
@@ -203,7 +200,6 @@
                 </div>
             </div>
 
-            <!-- سجل الموظفين -->
             <div id="view-employees" class="hidden" style="grid-column: 1 / -1;">
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
@@ -216,7 +212,12 @@
                     </table>
                 </div>
             </div>
-<div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+
+            <div id="view-overtime" class="hidden" style="grid-column: 1 / -1;">
+                <div class="card">
+                    <h3><i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i> تقرير العمل الإضافي</h3>
+                    
+                    <div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
                         
                         <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
                             <label>من تاريخ</label>
@@ -238,10 +239,6 @@
                             <i class="fas fa-file-excel"></i> تحميل إكسل
                         </button>
                     </div>
-                        <button onclick="downloadOvertimeCSV()" class="btn-main" style="height: 52px; background: #27ae60;">
-                            <i class="fas fa-file-excel"></i> تحميل ملف إكسل
-                        </button>
-                    </div>
 
                     <h4 style="margin-bottom: 15px; color: var(--text-muted);">معاينة البيانات</h4>
                     <table class="data-table">
@@ -255,12 +252,12 @@
                             </tr>
                         </thead>
                         <tbody id="overtime-report-body">
-                            <tr><td colspan="5" style="text-align:center; padding: 30px; color: var(--text-muted);">يرجى اختيار الشهر لعرض البيانات</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding: 30px; color: var(--text-muted);">يرجى اختيار الفترة لعرض البيانات</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <!-- عرض الملف الشخصي -->
+
             <div id="view-profile" class="hidden" style="grid-column: 1 / -1;">
                 <div class="card">
                     <button onclick="showView('employees')" class="back-btn"><i class="fas fa-arrow-right"></i> العودة للسجل</button>
@@ -283,7 +280,6 @@
         </div>
     </div>
 
-    <!-- Modal الموظف (إضافة وتعديل) -->
     <div id="employeeModal" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-title" style="margin-bottom: 25px;"><i class="fas fa-user-plus" style="color: var(--primary);"></i> بيانات الموظف</h3>
@@ -324,7 +320,6 @@
         </div>
     </div>
 
-    <!-- Generic Action Modal -->
     <div id="actionModal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
             <h3 id="action-modal-title">العنوان</h3>
@@ -381,30 +376,17 @@
 
         async function initAuth() {
             try {
-                // الأولوية 1: استخدام التوكن المخصص للبيئة (يحل مشكلة "auth/configuration-not-found" هنا)
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    // الأولوية 2: تسجيل الدخول المجهول (للاستخدام عند النشر)
                     await signInAnonymously(auth);
                 }
             } catch (error) { 
                 console.error("Auth Error:", error);
                 const loader = document.getElementById('loading-screen');
-                
-                // رسالة خطأ واضحة في حالة عدم تفعيل "Anonymous Auth" في الكونسول
                 if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
                     if (loader) {
-                        loader.innerHTML = `
-                            <div style="text-align:center; color:#ecf0f1; padding:20px;">
-                                <i class="fas fa-lock" style="font-size:48px; margin-bottom:15px; color:#e74c3c;"></i>
-                                <h3 style="color:#e74c3c; margin-bottom:10px;">التوثيق المجهول غير مفعل</h3>
-                                <p style="font-size:14px; margin-bottom:15px;">يبدو أنك تستخدم إعداداتك الخاصة. لكي يعمل التطبيق، يجب تفعيل خيار <b>Anonymous</b> في لوحة تحكم Firebase.</p>
-                                <div style="background:#2c3e50; padding:10px; border-radius:8px; font-family:monospace; direction:ltr; text-align:left; font-size:12px; border:1px solid #e74c3c;">
-                                    Build > Authentication > Sign-in method > Enable Anonymous
-                                </div>
-                            </div>
-                        `;
+                        loader.innerHTML = '<div style="text-align:center; padding:20px;"><h3>خطأ في التوثيق</h3><p>يرجى تفعيل Anonymous Auth في Firebase</p></div>';
                     }
                 }
             }
@@ -420,16 +402,13 @@
 
         function startListening() {
             if (!currentUser) return;
-            // استخدام مسار ثابت لقراءة البيانات
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
             onSnapshot(query(colRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
-
                 const loader = document.getElementById('loading-screen');
                 if (loader) loader.style.display = 'none';
-
                 const profileView = document.getElementById('view-profile');
                 if (!profileView.classList.contains('hidden')) {
                    const activeId = document.getElementById('edit-doc-id').value;
@@ -437,14 +416,9 @@
                 }
             }, (err) => {
                 console.error("Firestore Error:", err);
-                const loader = document.getElementById('loading-screen');
-                if (loader) {
-                    loader.innerHTML = '<p style="color:red">حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من إعدادات Firestore Rules</p>';
-                }
             });
         }
 
-        // --- حساب الرصيد (يومين ونصف لكل شهر منذ الانضمام) ---
         function calculateBalance(joiningDate, takenDays) {
             if (!joiningDate) return 0;
             const start = new Date(joiningDate);
@@ -454,39 +428,36 @@
             const balance = totalEarned - takenDays;
             return Math.max(0, balance).toFixed(1);
         }
-function updateBirthdayList() {
+
+        function updateBirthdayList() {
             const listEl = document.getElementById('birthday-list');
             if (!listEl) return;
 
             const now = new Date();
-            const currentMonth = now.getMonth() + 1; // الشهر الحالي
-            const currentDay = now.getDate(); // اليوم الحالي
+            const currentMonth = now.getMonth() + 1; 
+            const currentDay = now.getDate(); 
 
             let htmlContent = '';
             let count = 0;
 
-            // 1. تصفية الموظفين: مواليد هذا الشهر فقط
             const birthdayEmployees = allEmployees.filter(emp => {
                 if (!emp.dob) return false;
                 const parts = emp.dob.split('-'); 
-                const bMonth = parseInt(parts[1]); // استخراج الشهر من التاريخ
+                const bMonth = parseInt(parts[1]); 
                 return bMonth === currentMonth;
             });
 
-            // 2. ترتيب القائمة حسب يوم الميلاد (من الأقرب إلى الأبعد)
             birthdayEmployees.sort((a, b) => {
                 const dayA = parseInt(a.dob.split('-')[2]);
                 const dayB = parseInt(b.dob.split('-')[2]);
                 return dayA - dayB;
             });
 
-            // 3. إنشاء العناصر
             birthdayEmployees.forEach(emp => {
                 const parts = emp.dob.split('-');
                 const bDay = parseInt(parts[2]);
                 const isToday = (bDay === currentDay);
                 
-                // تصميم مختلف إذا كان عيد الميلاد اليوم
                 const bgStyle = isToday ? 'background: linear-gradient(to left, #fff0eb, #ffffff); border-right: 3px solid var(--primary);' : 'background: var(--bg-main);';
                 const icon = isToday ? '🎉' : '🎂';
                 const dateBadge = isToday 
@@ -506,32 +477,25 @@ function updateBirthdayList() {
                 count++;
             });
 
-            // 4. عرض النتيجة
             if (count > 0) {
                 listEl.innerHTML = htmlContent;
-                // تحديث عنوان الصندوق ليشير إلى الشهر (اختياري)
                 const cardTitle = listEl.parentElement.querySelector('h4');
                 if(cardTitle) cardTitle.innerHTML = `<i class="fas fa-birthday-cake" style="color: var(--primary);"></i> أعياد ميلاد شهر ${currentMonth}`;
             } else {
                 listEl.innerHTML = '<div style="text-align:center; padding:15px;"><i class="far fa-calendar-times" style="font-size:20px; color:#ccc; margin-bottom:5px; display:block;"></i><span style="font-size: 12px; color: var(--text-muted);">لا يوجد أعياد ميلاد هذا الشهر</span></div>';
             }
         }
-   // 1. دالة تحديث الواجهة (بديلة للدالة التي حذفتها)
+
         function updateUI() {
             const tableBody = document.getElementById('employeesTableBody');
             const countEl = document.getElementById('count-home');
             const scheduleRows = document.querySelectorAll('#home-schedule-body tr');
             
-            // تنظيف الجدول القديم
             if(tableBody) tableBody.innerHTML = "";
-            
-            // تحديث عدد الموظفين الكلي
             if (countEl) countEl.innerText = allEmployees.length;
 
-            // تنظيف خلايا الجدول الزمني
             scheduleRows.forEach(r => { for(let i=1; i<8; i++) r.cells[i].innerHTML = ""; });
 
-            // إعادة رسم الجدول والجدول الزمني
             allEmployees.forEach(data => {
                 if(tableBody) {
                     tableBody.innerHTML += `<tr>
@@ -557,22 +521,18 @@ function updateBirthdayList() {
                 }
             });
 
-            // هام جداً: استدعاء دالة الحسابات الجديدة
             updateDashboardStats();
             updateBirthdayList();
         }
 
-        // 2. دوال الحسابات الجديدة (تضاف أسفل الدالة السابقة مباشرة)
         async function updateDashboardStats() {
             const now = new Date();
-            // تنسيق التاريخ (YYYY-MM-DD)
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
             
             try {
-                // 1. جلب وحساب الإجازات اليوم
                 const leavesRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
                 const leavesQuery = query(leavesRef, where('date', '==', todayStr));
                 const leavesSnap = await getDocs(leavesQuery);
@@ -580,14 +540,6 @@ function updateBirthdayList() {
                 const leavesEl = document.getElementById('today-leaves');
                 if (leavesEl) leavesEl.innerText = leavesCount;
 
-                // قائمة بالموظفين المجازين اليوم
-                const employeesOnLeave = [];
-                leavesSnap.forEach(doc => {
-                    const d = doc.data();
-                    if(d.empDocId) employeesOnLeave.push(d.empDocId);
-                });
-
-                // 2. جلب وحساب الأذونات اليوم
                 const permsRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
                 const permsQuery = query(permsRef, where('date', '==', todayStr));
                 const permsSnap = await getDocs(permsQuery);
@@ -595,23 +547,14 @@ function updateBirthdayList() {
                 const permsEl = document.getElementById('today-permissions');
                 if (permsEl) permsEl.innerText = permsCount;
 
-                // 3. حساب المتواجدين (من جدولهم اليوم ليس عطلة)
                 const currentDayIndex = now.getDay(); 
                 const arabicDay = days[currentDayIndex];
                 
                 let onlineCount = 0;
                 
                 allEmployees.forEach(emp => {
-                    // الشرط: هل يوجد جدول لليوم؟ وهل هذا اليوم ليس "عطلة"؟
                     if (emp.schedule && emp.schedule[arabicDay] && emp.schedule[arabicDay] !== 'عطلة') {
-                        
-                        // تحقق إضافي: هل الموظف في إجازة رسمية مسجلة اليوم؟
-                        const isOnLeave = employeesOnLeave.includes(emp.id);
-                        
-                        // إذا كان لديه دوام (ليس عطلة) وليس في إجازة سنوية/طارئة -> يعتبر متواجد
-                        if (!isOnLeave) {
-                            onlineCount++;
-                        }
+                        onlineCount++;
                     }
                 });
 
@@ -623,29 +566,24 @@ function updateBirthdayList() {
             }
         }
 
-        // دالة مساعدة للتحقق من الوقت
         function isWorkingNow(shiftString) {
             if (!shiftString || shiftString === 'عطلة') return false;
-
             const now = new Date();
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
             const [startStr, endStr] = shiftString.split(' - ');
-            
             const parseTime = (t) => {
                 const [h, m] = t.split(':').map(Number);
                 return h * 60 + m;
             };
-
             const startMinutes = parseTime(startStr);
             const endMinutes = parseTime(endStr);
-
-            // التعامل مع شفت مسائي يمتد لبعد منتصف الليل (مثلاً 19:00 - 02:00)
             if (endMinutes < startMinutes) {
                 return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
             } else {
                 return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
             }
         }
+
         window.viewProfile = async (id) => {
             const emp = allEmployees.find(e => e.id === id);
             if (!emp) return;
@@ -708,7 +646,6 @@ function updateBirthdayList() {
                         </div>
                     </div>
 
-                    <!-- سجلات الجداول الفرعية -->
                     <div class="sub-card">
                         <h4><i class="fas fa-plane"></i> سجل الإجازات</h4>
                         <table class="data-table" style="margin-top:0;">
@@ -986,8 +923,7 @@ function updateBirthdayList() {
             }
         };
 
-       window.showView = (v) => {
-            // تمت إضافة 'overtime' للقائمة
+        window.showView = (v) => {
             ['home', 'employees', 'profile', 'overtime'].forEach(view => {
                 const el = document.getElementById(`view-${view}`);
                 if (el) el.className = (v === view ? '' : 'hidden');
@@ -996,8 +932,6 @@ function updateBirthdayList() {
             if (sideEl) sideEl.className = (v === 'home' ? 'side-widgets' : 'hidden');
             
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            
-            // التعامل مع الرابط النشط
             const activeNav = document.getElementById(`link-${v === 'profile' ? 'employees' : v}`);
             if(activeNav) activeNav.classList.add('active');
             
@@ -1006,7 +940,7 @@ function updateBirthdayList() {
                 'home': 'لوحة التحكم',
                 'employees': 'سجل الموظفين',
                 'profile': 'الملف الشخصي',
-                'overtime': 'احتساب العمل الإضافي' // العنوان الجديد
+                'overtime': 'احتساب العمل الإضافي'
             };
             if (titleEl) titleEl.innerText = titles[v] || 'Presto HR';
             
@@ -1026,9 +960,7 @@ function updateBirthdayList() {
                 setTimeout(() => t.style.display = 'none', 3000);
             }
         }
-// --- دوال الاستيراد والتصدير ---
 
-        // 1. تصدير البيانات (Backup)
         window.exportData = async () => {
             if(!confirm("هل تريد تحميل نسخة احتياطية من جميع البيانات؟")) return;
             
@@ -1043,7 +975,7 @@ function updateBirthdayList() {
                     const snap = await getDocs(query(colRef));
                     data[colName] = [];
                     snap.forEach(doc => {
-                        data[colName].push({ ...doc.data(), _id: doc.id }); // نحفظ المعرف أيضاً
+                        data[colName].push({ ...doc.data(), _id: doc.id }); 
                     });
                 }
 
@@ -1064,13 +996,12 @@ function updateBirthdayList() {
             }
         };
 
-        // 2. استيراد البيانات (Restore)
         window.importData = async (input) => {
             const file = input.files[0];
             if (!file) return;
 
             if(!confirm("تحذير: سيتم إضافة البيانات من الملف إلى النظام. هل أنت متأكد؟")) {
-                input.value = ''; // تفريغ الحقل
+                input.value = ''; 
                 return;
             }
 
@@ -1084,20 +1015,15 @@ function updateBirthdayList() {
                         const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
                         
                         for (const item of items) {
-                            // نقوم بإزالة المعرف القديم لنسمح لفايربيس بإنشاء معرف جديد أو استخدامه حسب الحاجة
-                            // هنا سنقوم بالإضافة كمستندات جديدة لتجنب مشاكل الكتابة فوق البيانات
                             const { _id, ...docData } = item; 
-                            
-                            // إضافة حقل يدل على أنه تم استيراده (اختياري)
                             docData.importedAt = serverTimestamp();
-                            
                             await addDoc(colRef, docData);
                             count++;
                         }
                     }
 
                     showToast(`تم استيراد ${count} سجل بنجاح!`);
-                    setTimeout(() => location.reload(), 2000); // تحديث الصفحة لرؤية البيانات
+                    setTimeout(() => location.reload(), 2000); 
 
                 } catch (err) {
                     console.error(err);
@@ -1105,11 +1031,8 @@ function updateBirthdayList() {
                 }
             };
             reader.readAsText(file);
-            input.value = ''; // إعادة تعيين الحقل
+            input.value = ''; 
         };
-        // --- دوال صفحة احتساب الإضافي ---
-
-       // --- دوال صفحة احتساب الإضافي (نطاق تاريخ) ---
 
         let currentOvertimeData = []; 
 
@@ -1119,9 +1042,7 @@ function updateBirthdayList() {
             const tbody = document.getElementById('overtime-report-body');
             const totalEl = document.getElementById('total-month-hours');
             
-            // لا نبدأ البحث إلا إذا تم تحديد التاريخين
             if (!dateFrom || !dateTo) {
-                // إذا كان أحد التواريخ ناقصاً
                 return;
             }
 
@@ -1137,8 +1058,6 @@ function updateBirthdayList() {
                 snap.forEach(doc => {
                     const data = doc.data();
                     
-                    // الشرط الجديد: هل تاريخ السجل يقع بين التاريخين المحددين؟
-                    // مقارنة النصوص (YYYY-MM-DD) تعمل بشكل صحيح مباشرة
                     if (data.date >= dateFrom && data.date <= dateTo) {
                         
                         const emp = allEmployees.find(e => e.id === data.empDocId);
@@ -1155,10 +1074,8 @@ function updateBirthdayList() {
                     }
                 });
 
-                // ترتيب النتائج حسب التاريخ
                 currentOvertimeData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-                // عرض الجدول
                 tbody.innerHTML = "";
                 if (currentOvertimeData.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">لا توجد سجلات في هذه الفترة</td></tr>';
@@ -1203,7 +1120,6 @@ function updateBirthdayList() {
             const link = document.createElement("a");
             link.setAttribute("href", url);
             
-            // اسم الملف يحتوي على التاريخين
             const fromDate = document.getElementById('overtime-from').value;
             const toDate = document.getElementById('overtime-to').value;
             link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`);
@@ -1216,11 +1132,3 @@ function updateBirthdayList() {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
