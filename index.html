@@ -449,14 +449,14 @@
         // 2. دوال الحسابات الجديدة (تضاف أسفل الدالة السابقة مباشرة)
         async function updateDashboardStats() {
             const now = new Date();
-            // تنسيق التاريخ ليكون مطابقاً لما هو مخزن في قاعدة البيانات (YYYY-MM-DD)
+            // تنسيق التاريخ (YYYY-MM-DD)
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
             
             try {
-                // --- حساب الإجازات اليوم ---
+                // 1. جلب وحساب الإجازات اليوم
                 const leavesRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
                 const leavesQuery = query(leavesRef, where('date', '==', todayStr));
                 const leavesSnap = await getDocs(leavesQuery);
@@ -464,14 +464,14 @@
                 const leavesEl = document.getElementById('today-leaves');
                 if (leavesEl) leavesEl.innerText = leavesCount;
 
-                // نحتفظ بقائمة من "أرقام الموظفين" الذين في إجازة لاستبعادهم من الحضور
+                // قائمة بالموظفين المجازين اليوم
                 const employeesOnLeave = [];
                 leavesSnap.forEach(doc => {
                     const d = doc.data();
                     if(d.empDocId) employeesOnLeave.push(d.empDocId);
                 });
 
-                // --- حساب الأذونات اليوم ---
+                // 2. جلب وحساب الأذونات اليوم
                 const permsRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
                 const permsQuery = query(permsRef, where('date', '==', todayStr));
                 const permsSnap = await getDocs(permsQuery);
@@ -479,22 +479,21 @@
                 const permsEl = document.getElementById('today-permissions');
                 if (permsEl) permsEl.innerText = permsCount;
 
-                // --- حساب المتواجدين حالياً (Online) ---
+                // 3. حساب المتواجدين (من جدولهم اليوم ليس عطلة)
                 const currentDayIndex = now.getDay(); 
                 const arabicDay = days[currentDayIndex];
                 
                 let onlineCount = 0;
                 
                 allEmployees.forEach(emp => {
-                    // 1. هل لديه شفت اليوم وليس عطلة؟
+                    // الشرط: هل يوجد جدول لليوم؟ وهل هذا اليوم ليس "عطلة"؟
                     if (emp.schedule && emp.schedule[arabicDay] && emp.schedule[arabicDay] !== 'عطلة') {
-                        // 2. هل هو في إجازة اليوم؟
-                        const isOnLeave = employeesOnLeave.includes(emp.id);
-                        // 3. هل الساعة الآن داخل وقت دوامه؟
-                        const isTime = isWorkingNow(emp.schedule[arabicDay]);
                         
-                        // إذا كان وقته + ليس مجازاً = متواجد
-                        if (isTime && !isOnLeave) {
+                        // تحقق إضافي: هل الموظف في إجازة رسمية مسجلة اليوم؟
+                        const isOnLeave = employeesOnLeave.includes(emp.id);
+                        
+                        // إذا كان لديه دوام (ليس عطلة) وليس في إجازة سنوية/طارئة -> يعتبر متواجد
+                        if (!isOnLeave) {
                             onlineCount++;
                         }
                     }
@@ -907,5 +906,6 @@
     </script>
 </body>
 </html>
+
 
 
