@@ -1150,7 +1150,7 @@ function importFullBackup(event) {
     };
     reader.readAsText(file);
 }
-// --- 1. إعدادات Firebase (استخدام النسخة المتوافقة Compat) ---
+// --- 1. إعدادات Firebase (نستخدم الإعدادات التي وضعتها أنت) ---
 const firebaseConfig = {
     apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
     authDomain: "hr-operation.firebaseapp.com",
@@ -1161,22 +1161,22 @@ const firebaseConfig = {
     appId: "1:498775599728:web:7159781682885915d31191"
 };
 
-// تشغيل Firebase (الطريقة الصحيحة لملفات HTML العادية)
+// --- 2. تشغيل Firebase بالطريقة المتوافقة ---
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
 
-// --- 2. تعريف المتغيرات الأساسية ---
+// --- 3. تعريف المتغيرات الأساسية ---
 let employees = []; 
 let currentEmpId = null;
-let systemDate = new Date();
+let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
 
-// --- 3. جلب البيانات من السحاب (Firebase) بدلاً من LocalStorage ---
+// --- 4. جلب البيانات من السحابة (تلقائي) ---
 db.ref('employees').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // تحويل الكائنات إلى مصفوفة وإضافة المفتاح السحابي
+        // تحويل البيانات السحابية لمصفوفة لتعمل مع كودك
         employees = Object.keys(data).map(key => ({
             firebaseKey: key, 
             ...data[key]
@@ -1185,13 +1185,12 @@ db.ref('employees').on('value', (snapshot) => {
         employees = [];
     }
     
-    // تحديث كل شيء في الواجهة تلقائياً
+    // تحديث الواجهة فور وصول البيانات
     updateDashboardStats();
     if (typeof renderEmployeeList === "function") renderEmployeeList();
-    if (typeof renderDashboardSchedule === "function") renderDashboardSchedule();
 });
 
-// --- 4. دالة حفظ الموظف الجديد (السحابية) ---
+// --- 5. تعديل دالة الحفظ لتصبح سحابية ---
 function saveNewEmployee(event) {
     event.preventDefault();
     
@@ -1208,22 +1207,43 @@ function saveNewEmployee(event) {
         leaveBal: document.getElementById('f_leave_bal').value || 30,
         blood: document.getElementById('f_blood').value,
         nat: document.getElementById('f_nat').value,
-        actions: [], leaves: [], tasks: [], overtime: []
+        actions: [], 
+        leaves: [], 
+        tasks: [], 
+        overtime: []
     };
 
-    // الرفع للسحابة
+    // إرسال البيانات للسحابة
     db.ref('employees').push(newEmp).then(() => {
-        alert("✅ تم الحفظ بنجاح في السحابة!");
+        alert("✅ تم الحفظ في السحابة بنجاح!");
         document.getElementById('fullEmployeeForm').reset();
         showSection('dashboard');
     }).catch(err => {
-        console.error("خطأ في الحفظ:", err);
-        alert("حدث خطأ أثناء الحفظ!");
+        alert("❌ خطأ في الحفظ: " + err.message);
     });
 }
+
+// --- 6. باقي الدوال المساعدة (تأكد من وجودها) ---
+function updateDashboardStats() {
+    document.getElementById('stat-emp-count').innerText = employees.length;
+    let act = 0, lv = 0;
+    employees.forEach(e => {
+        act += (e.actions ? e.actions.length : 0);
+        lv += (e.leaves ? e.leaves.length : 0);
+    });
+    document.getElementById('stat-action-count').innerText = act;
+    document.getElementById('stat-leave-count').innerText = lv;
+}
+
+// تشغيل عند التحميل
+window.onload = () => {
+    updateSystemDateUI();
+    updateDashboardStats();
+};
     </script>
 </body>
 </html>
+
 
 
 
