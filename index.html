@@ -151,6 +151,76 @@
         .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
         .badge-pending { background: #fff3cd; color: #856404; }
         .badge-success { background: #d4edda; color: #155724; }
+
+        /* --- كود التصميم الجديد (الصقه في نهاية الـ style) --- */
+        
+        .profile-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 15px; 
+            margin-bottom: 30px; 
+            background: var(--bg-card); 
+            padding: 15px 20px; 
+            border-radius: 20px; 
+            border: 1px solid var(--border-color);
+        }
+
+        .profile-right-part {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .profile-left-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px; 
+        }
+
+        .balance-card-mini { 
+            background: linear-gradient(135deg, #27ae60, #2ecc71); 
+            color: white; 
+            padding: 5px 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.2);
+            min-width: 80px;
+        }
+        
+        .balance-label-mini {
+            font-size: 10px; 
+            opacity: 0.9; 
+            display: block;
+        }
+
+        .balance-val-mini { 
+            font-size: 16px; 
+            font-weight: 800; 
+            font-family: 'Inter'; 
+            line-height: 1.2;
+        }
+
+        .btn-edit-sep { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-main); 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        
+        .btn-edit-sep:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -597,24 +667,98 @@
             } catch (error) { console.error("Stats Error:", error); }
         }
 
-        window.viewProfile = async (id) => {
-            const emp = allEmployees.find(e => e.id === id);
-            if (!emp) return;
-            document.getElementById('edit-doc-id').value = id;
-            const leaves = await fetchActionData('leaves', id);
-            const permissions = await fetchActionData('permissions', id);
-            const overtime = await fetchActionData('overtime', id);
-            const tasks = await fetchActionData('tasks', id);
-            const warnings = await fetchActionData('warnings', id);
-            let takenDays = 0;
-            leaves.forEach(l => { if (l.type === 'سنوية' || l.type === 'طارئة') takenDays += parseFloat(l.daysCount || 0); });
-            const currentBalance = calculateBalance(emp.joining, takenDays);
-            const profileContent = document.getElementById('profile-content');
+        const profileContent = document.getElementById('profile-content');
             profileContent.innerHTML = `
-                <div class="profile-header"><button onclick="editProfile('${emp.id}')" class="btn-edit-float"><i class="fas fa-edit"></i> تعديل الملف</button><div class="profile-avatar">${(emp.name || '?').charAt(0)}</div><div><h2 style="margin:0; font-size: 28px;">${emp.name}</h2><span style="color:var(--primary); font-weight:700;">${emp.role} • ${emp.dept}</span></div><div style="margin-right:auto;" class="balance-card"><span style="font-size:12px; opacity:0.9;">رصيد الإجازات المتاح</span><span class="balance-val">${currentBalance} يوم</span></div></div>
-                <div class="action-grid"><div class="action-card-btn" onclick="openActionModal('leave', '${emp.id}', ${currentBalance})"><i class="fas fa-plane-departure" style="color:#e67e22"></i><span>طلب إجازة</span></div><div class="action-card-btn" onclick="openActionModal('permission', '${emp.id}')"><i class="fas fa-clock" style="color:#3498db"></i><span>طلب إذن</span></div><div class="action-card-btn" onclick="openActionModal('overtime', '${emp.id}')"><i class="fas fa-plus-circle" style="color:#2ecc71"></i><span>عمل إضافي</span></div><div class="action-card-btn" onclick="openActionModal('task', '${emp.id}')"><i class="fas fa-briefcase" style="color:#9b59b6"></i><span>مهمة عمل</span></div><div class="action-card-btn" onclick="openActionModal('warning', '${emp.id}')"><i class="fas fa-exclamation-triangle" style="color:#e74c3c"></i><span>إنذار</span></div></div>
-                <div class="profile-info-grid" style="margin-top:30px;"><div class="profile-info-box"><span class="profile-label">الرقم الوظيفي</span><span class="profile-value">${emp.empId}</span></div><div class="profile-info-box"><span class="profile-label">المرتب</span><span class="profile-value">${emp.salary || '0'} ريال</span></div><div class="profile-info-box"><span class="profile-label">فصيلة الدم</span><span class="profile-value">${emp.bloodType || 'غير مسجل'}</span></div><div class="profile-info-box"><span class="profile-label">الهاتف</span><span class="profile-value">${emp.phone || '---'}</span></div><div class="profile-info-box"><span class="profile-label">البريد</span><span class="profile-value">${emp.email || '---'}</span></div><div class="profile-info-box"><span class="profile-label">الانضمام</span><span class="profile-value">${emp.joining || '---'}</span></div></div>
-                <div class="profile-tabs-content"><div class="sub-card" style="grid-column: span 2;"><h4><i class="fas fa-calendar-check"></i> جدول الدوام الأسبوعي</h4><div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">${days.map(d => `<div style="background:var(--bg-card); padding:10px; border-radius:12px; text-align:center; border: 1px solid var(--border-color);"><div style="font-size:11px; color:var(--text-muted);">${d}</div><div style="font-weight:700; font-size:11px;">${(emp.schedule && emp.schedule[d]) || '---'}</div></div>`).join('')}</div></div><div class="sub-card"><h4><i class="fas fa-plane"></i> سجل الإجازات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>النوع</th><th>الأيام</th><th>الحالة</th></tr></thead><tbody>${leaves.map(l => `<tr><td>${l.date}</td><td>${l.type}</td><td>${l.daysCount || 1}</td><td><span class="status-badge badge-success">مقبول</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-clock"></i> سجل الأذونات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>الساعات</th><th>الحالة</th></tr></thead><tbody>${permissions.map(p => `<tr><td>${p.date}</td><td>${p.hours} ساعة</td><td><span class="status-badge badge-success">تم</span></td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-plus-circle"></i> العمل الإضافي</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>الساعات</th><th>السبب</th></tr></thead><tbody>${overtime.map(o => `<tr><td>${o.date}</td><td>${o.hours} ساعة</td><td>${o.reason}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card"><h4><i class="fas fa-tasks"></i> مهمات العمل</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>المهمة</th></tr></thead><tbody>${tasks.map(t => `<tr><td>${t.date}</td><td>${t.type}</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div><div class="sub-card" style="grid-column: span 2;"><h4><i class="fas fa-exclamation-triangle"></i> سجل الإنذارات</h4><table class="data-table" style="margin-top:0;"><thead><tr><th>التاريخ</th><th>نوع الإنذار</th><th>التفاصيل</th></tr></thead><tbody>${warnings.map(w => `<tr><td>${w.date}</td><td>${w.type}</td><td>بسبب مخالفة اللوائح</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody></table></div></div>
+                <div class="profile-header">
+                    <div class="profile-right-part">
+                        <div class="profile-avatar" style="width:60px; height:60px; font-size:24px; border-radius:18px;">
+                            ${(emp.name || '?').charAt(0)}
+                        </div>
+                        <div>
+                            <h2 style="margin:0; font-size: 18px;">${emp.name}</h2>
+                            <span style="color:var(--text-muted); font-size:12px;">${emp.role}</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-left-actions">
+                        <div class="balance-card-mini">
+                            <span class="balance-label-mini">الرصيد</span>
+                            <span class="balance-val-mini">${currentBalance}</span>
+                        </div>
+                        
+                        <button onclick="editProfile('${emp.id}')" class="btn-edit-sep" title="تعديل البيانات">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="action-grid">
+                    <div class="action-card-btn" onclick="openActionModal('leave', '${emp.id}', ${currentBalance})"><i class="fas fa-plane-departure" style="color:#e67e22"></i><span>طلب إجازة</span></div>
+                    <div class="action-card-btn" onclick="openActionModal('permission', '${emp.id}')"><i class="fas fa-clock" style="color:#3498db"></i><span>طلب إذن</span></div>
+                    <div class="action-card-btn" onclick="openActionModal('overtime', '${emp.id}')"><i class="fas fa-plus-circle" style="color:#2ecc71"></i><span>عمل إضافي</span></div>
+                    <div class="action-card-btn" onclick="openActionModal('task', '${emp.id}')"><i class="fas fa-briefcase" style="color:#9b59b6"></i><span>مهمة عمل</span></div>
+                    <div class="action-card-btn" onclick="openActionModal('warning', '${emp.id}')"><i class="fas fa-exclamation-triangle" style="color:#e74c3c"></i><span>إنذار</span></div>
+                </div>
+                
+                <div class="profile-info-grid" style="margin-top:30px;">
+                    <div class="profile-info-box"><span class="profile-label">الرقم الوظيفي</span><span class="profile-value">${emp.empId}</span></div>
+                    <div class="profile-info-box"><span class="profile-label">المرتب</span><span class="profile-value">${emp.salary || '0'} ريال</span></div>
+                    <div class="profile-info-box"><span class="profile-label">فصيلة الدم</span><span class="profile-value">${emp.bloodType || 'غير مسجل'}</span></div>
+                    <div class="profile-info-box"><span class="profile-label">الهاتف</span><span class="profile-value">${emp.phone || '---'}</span></div>
+                    <div class="profile-info-box"><span class="profile-label">البريد</span><span class="profile-value">${emp.email || '---'}</span></div>
+                    <div class="profile-info-box"><span class="profile-label">الانضمام</span><span class="profile-value">${emp.joining || '---'}</span></div>
+                </div>
+
+                <div class="profile-tabs-content">
+                    <div class="sub-card" style="grid-column: span 2;">
+                        <h4><i class="fas fa-calendar-check"></i> جدول الدوام الأسبوعي</h4>
+                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
+                            ${days.map(d => `<div style="background:var(--bg-card); padding:10px; border-radius:12px; text-align:center; border: 1px solid var(--border-color);">
+                                <div style="font-size:11px; color:var(--text-muted);">${d}</div>
+                                <div style="font-weight:700; font-size:11px;">${(emp.schedule && emp.schedule[d]) || '---'}</div>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="sub-card">
+                        <h4><i class="fas fa-plane"></i> سجل الإجازات</h4>
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th>التاريخ</th><th>النوع</th><th>الأيام</th><th>الحالة</th></tr></thead>
+                            <tbody>${leaves.map(l => `<tr><td>${l.date}</td><td>${l.type}</td><td>${l.daysCount || 1}</td><td><span class="status-badge badge-success">مقبول</span></td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center">لا يوجد</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="sub-card">
+                        <h4><i class="fas fa-clock"></i> سجل الأذونات</h4>
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th>التاريخ</th><th>الساعات</th><th>الحالة</th></tr></thead>
+                            <tbody>${permissions.map(p => `<tr><td>${p.date}</td><td>${p.hours} ساعة</td><td><span class="status-badge badge-success">تم</span></td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="sub-card">
+                        <h4><i class="fas fa-plus-circle"></i> العمل الإضافي</h4>
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th>التاريخ</th><th>الساعات</th><th>السبب</th></tr></thead>
+                            <tbody>${overtime.map(o => `<tr><td>${o.date}</td><td>${o.hours} ساعة</td><td>${o.reason}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="sub-card">
+                        <h4><i class="fas fa-tasks"></i> مهمات العمل</h4>
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th>التاريخ</th><th>المهمة</th></tr></thead>
+                            <tbody>${tasks.map(t => `<tr><td>${t.date}</td><td>${t.type}</td></tr>`).join('') || '<tr><td colspan="2" style="text-align:center">لا يوجد</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="sub-card" style="grid-column: span 2;">
+                        <h4><i class="fas fa-exclamation-triangle"></i> سجل الإنذارات</h4>
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th>التاريخ</th><th>نوع الإنذار</th><th>التفاصيل</th></tr></thead>
+                            <tbody>${warnings.map(w => `<tr><td>${w.date}</td><td>${w.type}</td><td>بسبب مخالفة اللوائح</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center">لا يوجد</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>
             `;
             showView('profile');
         };
@@ -824,3 +968,4 @@
     </script>
 </body>
 </html>
+
