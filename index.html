@@ -531,21 +531,6 @@
                 return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
             }
         }
-
-                if (data.schedule) {
-                    days.forEach((day, idx) => {
-                        const shift = data.schedule[day];
-                        if (shift && shift !== "عطلة") {
-                            const targetRow = Array.from(scheduleRows).find(r => r.dataset.shift === shift);
-                            if (targetRow) targetRow.cells[idx+1].innerHTML += `<span class="emp-tag">${data.name.split(' ')[0]}</span>`;
-                        }
-                    });
-                }
-            });
-            const onlineCountEl = document.getElementById('online-count');
-            if (onlineCountEl) onlineCountEl.innerText = Math.floor(allEmployees.length * 0.75);
-        }
-
         window.viewProfile = async (id) => {
             const emp = allEmployees.find(e => e.id === id);
             if (!emp) return;
@@ -922,4 +907,5 @@
     </script>
 </body>
 </html>
+
 
