@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script>
-  // تهيئة Firebase
-  firebase.initializeApp(__firebase_config);
-</script>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- تحديد المسار الأساسي مهم لـ GitHub Pages -->
+    <base href="/presto.app/">
+    
     <title>Presto HR | إدارة </title>
     
     <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -291,11 +287,37 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // 1. تحديد إعدادات Firebase بذكاء
+        let firebaseConfig;
+        let appId;
+
+        // أولوية 1: استخدام إعدادات البيئة الحالية (لإصلاح الخطأ في نافذة المعاينة)
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            } catch (e) { console.error("Error parsing env config", e); }
+        }
+
+        // أولوية 2: السقوط للإعدادات الخاصة بك إذا لم تتوفر إعدادات البيئة (عند النشر على GitHub)
+        if (!firebaseConfig) {
+            firebaseConfig = {
+                apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
+                authDomain: "hr-operation.firebaseapp.com",
+                databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
+                projectId: "hr-operation",
+                storageBucket: "hr-operation.firebasestorage.app",
+                messagingSenderId: "498775599728",
+                appId: "1:498775599728:web:b195dea758f3cf415162b5",
+                measurementId: "G-YQTYHQ40NN"
+            };
+            appId = 'my-hr-app'; // معرف ثابت للتطبيق عند النشر
+        }
+
+        // تهيئة التطبيق
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const days = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
         const shifts = ["08:00 - 15:00", "09:00 - 16:00", "12:00 - 19:00", "16:00 - 23:00", "19:00 - 02:00"];
@@ -305,29 +327,52 @@
 
         async function initAuth() {
             try {
+                // الأولوية 1: استخدام التوكن المخصص للبيئة (يحل مشكلة "auth/configuration-not-found" هنا)
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
-                } else { await signInAnonymously(auth); }
-            } catch (e) { console.error(e); }
+                } else {
+                    // الأولوية 2: تسجيل الدخول المجهول (للاستخدام عند النشر)
+                    await signInAnonymously(auth);
+                }
+            } catch (error) { 
+                console.error("Auth Error:", error);
+                const loader = document.getElementById('loading-screen');
+                
+                // رسالة خطأ واضحة في حالة عدم تفعيل "Anonymous Auth" في الكونسول
+                if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
+                    if (loader) {
+                        loader.innerHTML = `
+                            <div style="text-align:center; color:#ecf0f1; padding:20px;">
+                                <i class="fas fa-lock" style="font-size:48px; margin-bottom:15px; color:#e74c3c;"></i>
+                                <h3 style="color:#e74c3c; margin-bottom:10px;">التوثيق المجهول غير مفعل</h3>
+                                <p style="font-size:14px; margin-bottom:15px;">يبدو أنك تستخدم إعداداتك الخاصة. لكي يعمل التطبيق، يجب تفعيل خيار <b>Anonymous</b> في لوحة تحكم Firebase.</p>
+                                <div style="background:#2c3e50; padding:10px; border-radius:8px; font-family:monospace; direction:ltr; text-align:left; font-size:12px; border:1px solid #e74c3c;">
+                                    Build > Authentication > Sign-in method > Enable Anonymous
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
         }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // لم يعد هنا إخفاء لشاشة التحميل بشكل مباشر؛ ننتظر أول لقطة بيانات من الفايرستور
+                console.log("Logged in as:", user.uid);
                 startListening();
             }
         });
 
         function startListening() {
             if (!currentUser) return;
+            // استخدام مسار ثابت لقراءة البيانات
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
             onSnapshot(query(colRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
 
-                // إخفاء شاشة التحميل فقط عند استلام أول دفعة بيانات بنجاح
                 const loader = document.getElementById('loading-screen');
                 if (loader) loader.style.display = 'none';
 
@@ -337,9 +382,11 @@
                    if(activeId) viewProfile(activeId);
                 }
             }, (err) => {
-                console.error(err);
-                // في حالة الخطأ، نخفيها أيضاً للسماح بالاستخدام أو إظهار رسالة خطأ
-                document.getElementById('loading-screen').style.display = 'none';
+                console.error("Firestore Error:", err);
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.innerHTML = '<p style="color:red">حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من إعدادات Firestore Rules</p>';
+                }
             });
         }
 
@@ -359,21 +406,23 @@
             const countEl = document.getElementById('count-home');
             const scheduleRows = document.querySelectorAll('#home-schedule-body tr');
             
-            tableBody.innerHTML = "";
+            if(tableBody) tableBody.innerHTML = "";
             if (countEl) countEl.innerText = allEmployees.length;
             scheduleRows.forEach(r => { for(let i=1; i<8; i++) r.cells[i].innerHTML = ""; });
 
             allEmployees.forEach(data => {
-                tableBody.innerHTML += `<tr>
-                    <td style="font-weight:800; color:var(--primary)">${data.empId}</td>
-                    <td style="font-weight:700">${data.name}</td>
-                    <td>${data.dept}</td>
-                    <td>${data.role}</td>
-                    <td>
-                        <button onclick="viewProfile('${data.id}')" class="btn-action btn-view"><i class="fas fa-eye"></i></button>
-                        <button onclick="deleteEmp('${data.id}')" class="btn-action btn-delete"><i class="fas fa-trash-alt"></i></button>
-                    </td>
-                </tr>`;
+                if(tableBody) {
+                    tableBody.innerHTML += `<tr>
+                        <td style="font-weight:800; color:var(--primary)">${data.empId || '---'}</td>
+                        <td style="font-weight:700">${data.name || '---'}</td>
+                        <td>${data.dept || '---'}</td>
+                        <td>${data.role || '---'}</td>
+                        <td>
+                            <button onclick="viewProfile('${data.id}')" class="btn-action btn-view"><i class="fas fa-eye"></i></button>
+                            <button onclick="deleteEmp('${data.id}')" class="btn-action btn-delete"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
+                }
 
                 if (data.schedule) {
                     days.forEach((day, idx) => {
@@ -412,7 +461,7 @@
             profileContent.innerHTML = `
                 <div class="profile-header">
                     <button onclick="editProfile('${emp.id}')" class="btn-edit-float"><i class="fas fa-edit"></i> تعديل الملف</button>
-                    <div class="profile-avatar">${emp.name.charAt(0)}</div>
+                    <div class="profile-avatar">${(emp.name || '?').charAt(0)}</div>
                     <div>
                         <h2 style="margin:0; font-size: 28px;">${emp.name}</h2>
                         <span style="color:var(--primary); font-weight:700;">${emp.role} • ${emp.dept}</span>
@@ -649,7 +698,10 @@
                 closeActionModal();
                 showToast("تم تسجيل الطلب بنجاح");
                 viewProfile(empDocId);
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e); 
+                alert("حدث خطأ في الحفظ. تأكد من اتصال الإنترنت والصلاحيات.");
+            }
         }
 
         window.editProfile = (id) => {
@@ -704,7 +756,10 @@
                 else { empData.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7'), empData); }
                 toggleModal(false);
                 showToast("تم الحفظ بنجاح");
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e);
+                alert("فشل الحفظ. تأكد من الصلاحيات.");
+            }
         };
 
         window.deleteEmp = async (id) => {
@@ -756,30 +811,6 @@
         }
 
         initAuth();
-    
-</script>
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
-  authDomain: "hr-operation.firebaseapp.com",
-  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
-  projectId: "hr-operation",
-  storageBucket: "hr-operation.firebasestorage.app",
-  messagingSenderId: "498775599728",
-  appId: "1:498775599728:web:b195dea758f3cf415162b5",
-  measurementId: "G-YQTYHQ40NN"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    </script>
 </body>
 </html>
-
