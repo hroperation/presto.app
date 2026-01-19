@@ -170,8 +170,8 @@
                 <div class="stats-row">
                     <div class="stat-box"><h4>إجمالي الموظفين</h4><div class="val" id="count-home">0</div></div>
                     <div class="stat-box"><h4>المتواجدين الآن</h4><div class="val" id="online-count">0</div></div>
-                    <div class="stat-box"><h4>طلبات الأذونات</h4><div class="val">0</div></div>
-                    <div class="stat-box"><h4>طلبات الإجازة</h4><div class="val">0</div></div>
+                    <div class="stat-box"><h4>طلبات الأذونات</h4><div class="val" id="today-permissions">0</div></div>
+                    <div class="stat-box"><h4>طلبات الإجازة</h4><div class="val" id="today-leaves">0</div></div>
                 </div>
                 <div class="card">
                     <h3><i class="far fa-calendar-alt" style="color: var(--primary);"></i> الجدول الزمني للإسبوع</h3>
@@ -285,7 +285,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
         // 1. تحديد إعدادات Firebase بذكاء
         let firebaseConfig;
@@ -401,15 +401,22 @@
             return Math.max(0, balance).toFixed(1);
         }
 
+   // 1. دالة تحديث الواجهة (بديلة للدالة التي حذفتها)
         function updateUI() {
             const tableBody = document.getElementById('employeesTableBody');
             const countEl = document.getElementById('count-home');
             const scheduleRows = document.querySelectorAll('#home-schedule-body tr');
             
+            // تنظيف الجدول القديم
             if(tableBody) tableBody.innerHTML = "";
+            
+            // تحديث عدد الموظفين الكلي
             if (countEl) countEl.innerText = allEmployees.length;
+
+            // تنظيف خلايا الجدول الزمني
             scheduleRows.forEach(r => { for(let i=1; i<8; i++) r.cells[i].innerHTML = ""; });
 
+            // إعادة رسم الجدول والجدول الزمني
             allEmployees.forEach(data => {
                 if(tableBody) {
                     tableBody.innerHTML += `<tr>
@@ -423,6 +430,107 @@
                         </td>
                     </tr>`;
                 }
+
+                if (data.schedule) {
+                    days.forEach((day, idx) => {
+                        const shift = data.schedule[day];
+                        if (shift && shift !== "عطلة") {
+                            const targetRow = Array.from(scheduleRows).find(r => r.dataset.shift === shift);
+                            if (targetRow) targetRow.cells[idx+1].innerHTML += `<span class="emp-tag">${data.name.split(' ')[0]}</span>`;
+                        }
+                    });
+                }
+            });
+
+            // هام جداً: استدعاء دالة الحسابات الجديدة
+            updateDashboardStats();
+        }
+
+        // 2. دوال الحسابات الجديدة (تضاف أسفل الدالة السابقة مباشرة)
+        async function updateDashboardStats() {
+            const now = new Date();
+            // تنسيق التاريخ ليكون مطابقاً لما هو مخزن في قاعدة البيانات (YYYY-MM-DD)
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            
+            try {
+                // --- حساب الإجازات اليوم ---
+                const leavesRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
+                const leavesQuery = query(leavesRef, where('date', '==', todayStr));
+                const leavesSnap = await getDocs(leavesQuery);
+                const leavesCount = leavesSnap.size;
+                const leavesEl = document.getElementById('today-leaves');
+                if (leavesEl) leavesEl.innerText = leavesCount;
+
+                // نحتفظ بقائمة من "أرقام الموظفين" الذين في إجازة لاستبعادهم من الحضور
+                const employeesOnLeave = [];
+                leavesSnap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.empDocId) employeesOnLeave.push(d.empDocId);
+                });
+
+                // --- حساب الأذونات اليوم ---
+                const permsRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
+                const permsQuery = query(permsRef, where('date', '==', todayStr));
+                const permsSnap = await getDocs(permsQuery);
+                const permsCount = permsSnap.size;
+                const permsEl = document.getElementById('today-permissions');
+                if (permsEl) permsEl.innerText = permsCount;
+
+                // --- حساب المتواجدين حالياً (Online) ---
+                const currentDayIndex = now.getDay(); 
+                const arabicDay = days[currentDayIndex];
+                
+                let onlineCount = 0;
+                
+                allEmployees.forEach(emp => {
+                    // 1. هل لديه شفت اليوم وليس عطلة؟
+                    if (emp.schedule && emp.schedule[arabicDay] && emp.schedule[arabicDay] !== 'عطلة') {
+                        // 2. هل هو في إجازة اليوم؟
+                        const isOnLeave = employeesOnLeave.includes(emp.id);
+                        // 3. هل الساعة الآن داخل وقت دوامه؟
+                        const isTime = isWorkingNow(emp.schedule[arabicDay]);
+                        
+                        // إذا كان وقته + ليس مجازاً = متواجد
+                        if (isTime && !isOnLeave) {
+                            onlineCount++;
+                        }
+                    }
+                });
+
+                const onlineEl = document.getElementById('online-count');
+                if (onlineEl) onlineEl.innerText = onlineCount;
+
+            } catch (error) {
+                console.error("خطأ في جلب الإحصائيات:", error);
+            }
+        }
+
+        // دالة مساعدة للتحقق من الوقت
+        function isWorkingNow(shiftString) {
+            if (!shiftString || shiftString === 'عطلة') return false;
+
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const [startStr, endStr] = shiftString.split(' - ');
+            
+            const parseTime = (t) => {
+                const [h, m] = t.split(':').map(Number);
+                return h * 60 + m;
+            };
+
+            const startMinutes = parseTime(startStr);
+            const endMinutes = parseTime(endStr);
+
+            // التعامل مع شفت مسائي يمتد لبعد منتصف الليل (مثلاً 19:00 - 02:00)
+            if (endMinutes < startMinutes) {
+                return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+            } else {
+                return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+            }
+        }
 
                 if (data.schedule) {
                     days.forEach((day, idx) => {
@@ -814,3 +922,4 @@
     </script>
 </body>
 </html>
+
