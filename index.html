@@ -1150,33 +1150,28 @@ function importFullBackup(event) {
     };
     reader.readAsText(file);
 }
-// --- 1. إعدادات Firebase (نستخدم الإعدادات التي وضعتها أنت) ---
+// --- 1. إعدادات Firebase (المأخوذة من حسابك) ---
 const firebaseConfig = {
-    apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
-    authDomain: "hr-operation.firebaseapp.com",
-    databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
-    projectId: "hr-operation",
-    storageBucket: "hr-operation.firebasestorage.app",
-    messagingSenderId: "498775599728",
-    appId: "1:498775599728:web:7159781682885915d31191"
+  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
+  authDomain: "hr-operation.firebaseapp.com",
+  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
+  projectId: "hr-operation",
+  storageBucket: "hr-operation.firebasestorage.app",
+  messagingSenderId: "498775599728",
+  appId: "1:498775599728:web:7159781682885915d31191"
 };
 
-// --- 2. تشغيل Firebase بالطريقة المتوافقة ---
+// --- 2. تشغيل Firebase (النسخة المتوافقة لتجنب الجمود) ---
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
 
-// --- 3. تعريف المتغيرات الأساسية ---
-let employees = []; 
-let currentEmpId = null;
-let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
-
-// --- 4. جلب البيانات من السحابة (تلقائي) ---
+// --- 3. جلب البيانات وربطها بكل وظائف النظام ---
 db.ref('employees').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // تحويل البيانات السحابية لمصفوفة لتعمل مع كودك
+        // تحويل البيانات مع الحفاظ على مفتاح Firebase لكل موظف
         employees = Object.keys(data).map(key => ({
             firebaseKey: key, 
             ...data[key]
@@ -1185,12 +1180,17 @@ db.ref('employees').on('value', (snapshot) => {
         employees = [];
     }
     
-    // تحديث الواجهة فور وصول البيانات
+    // تشغيل كل وظائف التحديث الأصلية الموجودة في كودك
     updateDashboardStats();
-    if (typeof renderEmployeeList === "function") renderEmployeeList();
+    updateDashboardSchedule();
+    // تحديث الجدول إذا كان مفتوحاً
+    if (!document.getElementById('employees').classList.contains('hidden-section')) {
+        renderEmployeeList();
+    }
 });
 
-// --- 5. تعديل دالة الحفظ لتصبح سحابية ---
+// --- 4. تعديل دالة الحفظ (لتعمل سحابياً) ---
+// ملاحظة: هذه الدالة تستخدم نفس الأسماء الموجودة في فورم نظامك الأصلي
 function saveNewEmployee(event) {
     event.preventDefault();
     
@@ -1213,36 +1213,28 @@ function saveNewEmployee(event) {
         overtime: []
     };
 
-    // إرسال البيانات للسحابة
     db.ref('employees').push(newEmp).then(() => {
         alert("✅ تم الحفظ في السحابة بنجاح!");
         document.getElementById('fullEmployeeForm').reset();
         showSection('dashboard');
     }).catch(err => {
-        alert("❌ خطأ في الحفظ: " + err.message);
+        alert("❌ خطأ: " + err.message);
     });
 }
 
-// --- 6. باقي الدوال المساعدة (تأكد من وجودها) ---
-function updateDashboardStats() {
-    document.getElementById('stat-emp-count').innerText = employees.length;
-    let act = 0, lv = 0;
-    employees.forEach(e => {
-        act += (e.actions ? e.actions.length : 0);
-        lv += (e.leaves ? e.leaves.length : 0);
+// --- 5. دالة المزامنة (للتأكد من حفظ أي تعديل لاحق كالإجازات أو الإنذارات) ---
+function syncToCloud() {
+    // هذه الدالة اختيارية إذا أردت تحديث الموظف بالكامل بعد إضافة إنذار مثلاً
+    employees.forEach(emp => {
+        if(emp.firebaseKey) {
+            db.ref('employees/' + emp.firebaseKey).set(emp);
+        }
     });
-    document.getElementById('stat-action-count').innerText = act;
-    document.getElementById('stat-leave-count').innerText = lv;
 }
-
-// تشغيل عند التحميل
-window.onload = () => {
-    updateSystemDateUI();
-    updateDashboardStats();
-};
     </script>
 </body>
 </html>
+
 
 
 
