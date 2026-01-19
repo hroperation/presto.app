@@ -1121,7 +1121,8 @@ import { getAnalytics } from "firebase/analytics";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 <script>
-    // --- إعدادات Firebase (لا تغيرها) ---
+   <script>
+    // 1. إعدادات قاعدة البيانات
     const firebaseConfig = {
         apiKey: "AIzaSyCy5VroP_MGxOXUHxN0KJLStmGE_iV0UFY",
         authDomain: "test-81dcc.firebaseapp.com",
@@ -1132,88 +1133,99 @@ import { getAnalytics } from "firebase/analytics";
         appId: "1:462100667219:web:1cc7819a81799e3022dfa6"
     };
 
-    // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // --- المتغيرات الأساسية لكودك ---
     let employees = [];
-    let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
-    const weekDays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+    let systemDate = new Date();
 
-    // --- ربط البيانات بالسحابة (Firebase) ---
+    // 2. جلب البيانات من السحابة وتحديث الجداول فوراً
     database.ref('employees/').on('value', (snapshot) => {
         const data = snapshot.val();
-        // جلب البيانات وتحويلها لمصفوفة مع الحفاظ على مفتاح الـ ID للحفظ والتعديل
         employees = data ? Object.entries(data).map(([id, val]) => ({ firebaseId: id, ...val })) : [];
-        
-        // استدعاء دوال التحديث الموجودة في تصميمك
-        renderEmployeesTable(); 
+        renderEmployeesTable();
         updateStats();
     });
 
-    // --- وظيفة حفظ موظف جديد للسحابة ---
+    // 3. وظيفة حفظ الموظف الجديد (التي كانت لا تعمل)
     function saveNewEmployee(event) {
-        event.preventDefault();
+        event.preventDefault(); // منع الصفحة من التحديث
+
         const newEmp = {
             name: document.getElementById('f_name').value,
-            id: document.getElementById('f_id').value,
-            dob: document.getElementById('f_dob').value,
-            phone: document.getElementById('f_phone').value,
+            empId: document.getElementById('f_id').value,
             dept: document.getElementById('f_dept').value,
             position: document.getElementById('f_pos').value,
             salary: document.getElementById('f_salary').value,
             startDate: document.getElementById('f_start_date').value,
-            leaveBalance: document.getElementById('f_leave_bal').value,
-            bloodType: document.getElementById('f_blood').value,
-            nationality: document.getElementById('f_nat').value,
-            actions: [],
-            leaves: [],
-            tasks: [],
-            overtime: []
+            // أضف أي حقول أخرى هنا بنفس الطريقة
         };
 
-        // الرفع للسحابة بدلاً من LocalStorage
-        database.ref('employees/').push(newEmp).then(() => {
-            alert("تم إضافة الموظف بنجاح للسحابة ✨");
-            document.getElementById('fullEmployeeForm').reset();
-            showSection('dashboard');
-        });
-    }
-
-    // --- دوال التنقل (التي طلبت الحفاظ عليها) ---
-    function showSection(id) {
-        document.querySelectorAll('section').forEach(s => s.classList.add('hidden-section'));
-        const target = document.getElementById(id);
-        if(target) target.classList.remove('hidden-section');
-        
-        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-        const activeLink = document.getElementById('link-' + id);
-        if(activeLink) activeLink.classList.add('active');
-        
-        // تحديث العنوان
-        const titleMap = { 'dashboard': 'لوحة التحكم', 'employees': 'إدارة الموظفين', 'add-employee-form': 'إضافة موظف جديد' };
-        if(titleMap[id]) document.getElementById('section-title').innerText = titleMap[id];
-    }
-
-    function updateSystemDateUI() {
-        const dateStr = systemDate.toISOString().split('T')[0];
-        if(document.getElementById('systemDateSelector')) document.getElementById('systemDateSelector').value = dateStr;
-        if(document.getElementById('current-date-display')) {
-            document.getElementById('current-date-display').innerText = systemDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if(newEmp.name && newEmp.empId) {
+            database.ref('employees/').push(newEmp).then(() => {
+                alert("✅ تم الحفظ في السحابة بنجاح!");
+                document.getElementById('fullEmployeeForm').reset();
+                showSection('dashboard');
+            }).catch(err => alert("خطأ في الحفظ: " + err.message));
+        } else {
+            alert("يرجى إدخال الاسم والرقم الوظيفي على الأقل");
         }
     }
 
-    // لتشغيل الدوال عند فتح الصفحة
-    window.onload = () => {
-        updateSystemDateUI();
-    };
+    // 4. وظائف التنقل وإظهار الأقسام (تنسيقك الخاص)
+    function showSection(id) {
+        // إخفاء كل الأقسام
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden-section'));
+        // إظهار القسم المطلوب
+        const target = document.getElementById(id);
+        if(target) target.classList.remove('hidden-section');
+        
+        // تحديث شكل الروابط في القائمة الجانبية
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        const activeLink = document.getElementById('link-' + (id === 'add-employee-form' ? 'dashboard' : id));
+        if(activeLink) activeLink.classList.add('active');
 
-    // ملاحظة: ستحتاج لإضافة دالة renderEmployeesTable و updateStats لتكملة عرض البيانات في جداول تصميمك.
+        // تحديث العنوان العلوي
+        const titles = { 'dashboard': 'لوحة التحكم', 'employees': 'إدارة الموظفين', 'add-employee-form': 'إضافة موظف جديد' };
+        if(titles[id]) document.getElementById('section-title').innerText = titles[id];
+    }
+
+    // 5. تحديث الجدول بالأرقام والأسماء
+    function renderEmployeesTable() {
+        const tableBody = document.getElementById('employeesTableBody');
+        const dashTable = document.getElementById('dash-table'); // إذا كان موجوداً في كودك
+        
+        if(tableBody) {
+            tableBody.innerHTML = employees.map(emp => `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-5 font-bold">${emp.name}</td>
+                    <td class="p-5 text-slate-500">${emp.dept}</td>
+                    <td class="p-5 text-center">
+                        <button onclick="viewProfile('${emp.firebaseId}')" class="text-blue-600 font-bold">عرض الملف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    function updateStats() {
+        if(document.getElementById('stat-emp-count')) {
+            document.getElementById('stat-emp-count').innerText = employees.length;
+        }
+    }
+
+    // تهيئة التاريخ عند التشغيل
+    window.onload = () => {
+        if(document.getElementById('current-date-display')) {
+            document.getElementById('current-date-display').innerText = systemDate.toLocaleDateString('ar-EG');
+        }
+    };
+</script>
 </script>
     </script>
 </body>
 </html>
+
 
 
 
