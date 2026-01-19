@@ -1150,9 +1150,80 @@ function importFullBackup(event) {
     };
     reader.readAsText(file);
 }
+// --- 1. إعدادات Firebase (استخدام النسخة المتوافقة Compat) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
+    authDomain: "hr-operation.firebaseapp.com",
+    databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
+    projectId: "hr-operation",
+    storageBucket: "hr-operation.firebasestorage.app",
+    messagingSenderId: "498775599728",
+    appId: "1:498775599728:web:7159781682885915d31191"
+};
 
+// تشغيل Firebase (الطريقة الصحيحة لملفات HTML العادية)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// --- 2. تعريف المتغيرات الأساسية ---
+let employees = []; 
+let currentEmpId = null;
+let systemDate = new Date();
+
+// --- 3. جلب البيانات من السحاب (Firebase) بدلاً من LocalStorage ---
+db.ref('employees').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // تحويل الكائنات إلى مصفوفة وإضافة المفتاح السحابي
+        employees = Object.keys(data).map(key => ({
+            firebaseKey: key, 
+            ...data[key]
+        }));
+    } else {
+        employees = [];
+    }
+    
+    // تحديث كل شيء في الواجهة تلقائياً
+    updateDashboardStats();
+    if (typeof renderEmployeeList === "function") renderEmployeeList();
+    if (typeof renderDashboardSchedule === "function") renderDashboardSchedule();
+});
+
+// --- 4. دالة حفظ الموظف الجديد (السحابية) ---
+function saveNewEmployee(event) {
+    event.preventDefault();
+    
+    const newEmp = {
+        id: document.getElementById('f_id').value,
+        name: document.getElementById('f_name').value,
+        dob: document.getElementById('f_dob').value,
+        phone: document.getElementById('f_phone').value,
+        address: document.getElementById('f_address').value,
+        dept: document.getElementById('f_dept').value,
+        pos: document.getElementById('f_pos').value,
+        salary: document.getElementById('f_salary').value,
+        startDate: document.getElementById('f_start_date').value,
+        leaveBal: document.getElementById('f_leave_bal').value || 30,
+        blood: document.getElementById('f_blood').value,
+        nat: document.getElementById('f_nat').value,
+        actions: [], leaves: [], tasks: [], overtime: []
+    };
+
+    // الرفع للسحابة
+    db.ref('employees').push(newEmp).then(() => {
+        alert("✅ تم الحفظ بنجاح في السحابة!");
+        document.getElementById('fullEmployeeForm').reset();
+        showSection('dashboard');
+    }).catch(err => {
+        console.error("خطأ في الحفظ:", err);
+        alert("حدث خطأ أثناء الحفظ!");
+    });
+}
     </script>
 </body>
 </html>
+
 
 
