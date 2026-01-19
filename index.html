@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام HR السحابي - النسخة الإصلاحية v18.1</title>
+    <title>نظام HR المتكامل السحابي - الإصدار النهائي 18.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -12,11 +12,15 @@
         .sidebar-link { transition: all 0.3s ease; cursor: pointer; }
         .sidebar-link.active { background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%); border-left: 4px solid var(--accent); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
         .hidden-section { display: none; }
-        .modal { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-        .modal.active { display: flex; }
         .stat-card { transition: all 0.3s ease; cursor: pointer; }
         .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        input, select, textarea { border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem 1rem; width: 100%; background: #fff; }
+        .modern-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        input, select, textarea { border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem 1rem; width: 100%; transition: all 0.2s; background-color: #fff; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .modal { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal.active { display: flex; }
+        .ai-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); } 70% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); } }
         @media print { .no-print { display: none !important; } .print-area { display: block !important; } }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -24,297 +28,159 @@
 </head>
 <body class="flex min-h-screen">
 
-    <aside class="w-72 bg-slate-900 text-white flex-shrink-0 hidden lg:flex flex-col no-print">
+    <aside class="w-72 bg-slate-900 text-white flex-shrink-0 hidden lg:flex flex-col shadow-2xl z-50 no-print">
         <div class="p-8">
-            <div class="text-2xl font-extrabold text-blue-400">HR PLATFORM ✨</div>
-            <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">النظام السحابي الموحد</p>
+            <div class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-yellow-400">HR PLATFORM ✨</div>
+            <p class="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest">إصدار سحابي 18.5</p>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <div onclick="showSection('dashboard')" id="link-dashboard" class="sidebar-link p-3 rounded-xl hover:bg-slate-800 active">📊 لوحة التحكم</div>
-            <div onclick="showSection('employees')" id="link-employees" class="sidebar-link p-3 rounded-xl hover:bg-slate-800">👥 إدارة الموظفين</div>
+            <div onclick="showSection('dashboard')" id="link-dashboard" class="sidebar-link flex items-center p-3 rounded-xl hover:bg-slate-800 active">📊 لوحة التحكم</div>
+            <div onclick="showSection('employees')" id="link-employees" class="sidebar-link flex items-center p-3 rounded-xl hover:bg-slate-800">👥 إدارة الموظفين</div>
+            
+            <div class="pt-10 px-3 space-y-2">
+                <button onclick="downloadFullBackup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] py-3 rounded-xl border border-slate-700 font-bold transition-all">💾 تصدير نسخة احتياطية</button>
+                <button onclick="document.getElementById('importFile').click()" class="w-full bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] py-3 rounded-xl border border-emerald-700 font-bold transition-all">📥 استعادة نسخة احتياطية</button>
+                <input type="file" id="importFile" class="hidden" accept=".json" onchange="importFullBackup(event)">
+                <button onclick="openModal('modalExportOvertime')" class="w-full bg-orange-800/50 hover:bg-orange-700 text-orange-100 text-[10px] py-3 rounded-xl border border-orange-700 font-bold transition-all">📊 تقرير الإضافي الشامل</button>
+            </div>
         </nav>
+        <div class="p-6 border-t border-slate-800">
+            <div class="flex items-center gap-3 bg-slate-800/50 p-4 rounded-2xl">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold">M</div>
+                <div><p class="text-sm font-bold text-white">مدير النظام</p><p class="text-[10px] text-slate-400" id="current-date-display"></p></div>
+            </div>
+        </div>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="bg-white/90 backdrop-blur shadow-sm p-4 flex justify-between items-center z-40 no-print">
-            <h2 id="section-title" class="text-xl font-bold">لوحة التحكم</h2>
+        <header class="bg-white/90 backdrop-blur shadow-sm p-4 flex justify-between items-center z-40 sticky top-0 border-b border-slate-100 no-print">
+            <h2 id="section-title" class="text-xl font-extrabold text-slate-800">لوحة التحكم</h2>
             <div class="flex items-center gap-3">
-                <input type="date" id="systemDateSelector" onchange="updateSystemDate()" class="text-xs py-1.5 w-40">
-                <button onclick="showSection('add-employee-form')" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold">+ موظف جديد</button>
+                <div class="flex flex-col items-end">
+                    <span class="text-[9px] font-bold text-blue-600 mb-1">تاريخ النظام</span>
+                    <input type="date" id="systemDateSelector" onchange="updateSystemDate()" class="bg-slate-50 border-slate-200 text-xs py-1.5 w-40">
+                </div>
+                <button onclick="showSection('add-employee-form')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all">+ موظف جديد</button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 print-area">
             
             <section id="dashboard" class="space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
-                    <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border border-slate-50 text-center">
-                        <p class="text-slate-400 text-xs font-bold">إجمالي الموظفين</p>
-                        <h3 class="text-3xl font-black mt-1" id="stat-emp-count">0</h3>
-                    </div>
-                    <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border border-slate-50 text-center">
-                        <p class="text-red-400 text-xs font-bold">الإنذارات</p>
-                        <h3 class="text-3xl font-black mt-1 text-red-600" id="stat-action-count">0</h3>
-                    </div>
-                    <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border border-slate-50 text-center">
-                        <p class="text-emerald-400 text-xs font-bold">الإجازات</p>
-                        <h3 class="text-3xl font-black mt-1 text-emerald-600" id="stat-leave-count">0</h3>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 no-print">
+                    <div class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-slate-400 font-bold text-[10px] uppercase">الموظفين</p><h3 class="text-3xl font-black text-slate-800" id="stat-emp-count">0</h3></div>
+                    <div class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-red-400 font-bold text-[10px] uppercase">الإنذارات</p><h3 class="text-3xl font-black text-red-600" id="stat-action-count">0</h3></div>
+                    <div class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-emerald-400 font-bold text-[10px] uppercase">الإجازات</p><h3 class="text-3xl font-black text-emerald-600" id="stat-leave-count">0</h3></div>
+                    <div class="stat-card bg-white p-6 rounded-3xl border border-slate-50 modern-shadow text-center"><p class="text-blue-400 font-bold text-[10px] uppercase">المهام المنجزة</p><h3 class="text-3xl font-black text-blue-600" id="stat-task-count">0</h3></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    <div class="lg:col-span-3 bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                        <div class="p-6 border-b bg-slate-50 font-bold">🗓️ خريطة الدوام الأسبوعي</div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-right border-collapse">
-                                <thead class="bg-slate-100 text-[10px] text-slate-500 uppercase">
-                                    <tr id="dashboardScheduleHeadRow"></tr>
-                                </thead>
-                                <tbody id="dashboardScheduleTable" class="text-[11px] font-bold"></tbody>
-                            </table>
-                        </div>
+                    <div class="lg:col-span-3 bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden">
+                        <div class="p-8 border-b bg-slate-50/30 font-black flex justify-between"><span>🗓️ الدوام الأسبوعي (شفتات)</span><span id="week-range" class="text-xs text-slate-400"></span></div>
+                        <div class="overflow-x-auto"><table class="w-full text-right border-collapse"><thead class="bg-slate-50 text-[10px] text-slate-500 uppercase"><tr id="dashHeadRow"></tr></thead><tbody id="dashTableBody" class="text-[11px] font-bold"></tbody></table></div>
                     </div>
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden h-fit">
-                        <div class="p-5 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold">🎂 أعياد ميلاد الشهر</div>
-                        <div id="birthdayList" class="p-4 space-y-3"></div>
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden h-fit no-print">
+                        <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-black">🎂 أعياد ميلاد قادمة</div>
+                        <div id="birthdayList" class="p-6 space-y-4"></div>
                     </div>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] border border-slate-100 modern-shadow overflow-hidden">
+                    <div class="p-8 border-b bg-slate-50 font-black flex justify-between"><span>📅 جدول الإجازات السنوي</span><span class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-full">كاشف التعارضات</span></div>
+                    <div class="overflow-x-auto max-h-64"><table class="w-full text-right border-collapse"><thead class="bg-slate-50 text-[10px] text-slate-500 sticky top-0 uppercase"><tr><th class="p-4">التاريخ</th><th class="p-4">الموظفين</th><th class="p-4 text-center">الحالة</th></tr></thead><tbody id="yearlyLeavesTable" class="text-xs font-bold divide-y divide-slate-50"></tbody></table></div>
                 </div>
             </section>
 
             <section id="employees" class="hidden-section space-y-6">
-                <div class="bg-white p-4 rounded-2xl shadow-sm"><input type="text" id="empSearch" onkeyup="searchEmployees()" placeholder="ابحث باسم الموظف..."></div>
-                <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-                    <table class="w-full text-right border-collapse">
-                        <thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr><th class="p-4">الاسم</th><th class="p-4">القسم</th><th class="p-4 text-center">الإجراء</th></tr></thead>
-                        <tbody id="employeesTableBody" class="font-bold"></tbody>
-                    </table>
-                </div>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm flex items-center gap-4"><input type="text" id="empSearch" onkeyup="searchEmployees()" placeholder="ابحث باسم الموظف أو القسم..." class="bg-slate-50 border-none flex-1"></div>
+                <div class="bg-white rounded-[2rem] border overflow-hidden shadow-sm"><table class="w-full text-right border-collapse"><thead class="bg-slate-50 text-xs text-slate-500 uppercase"><tr><th class="p-5">الاسم</th><th class="p-5">القسم</th><th class="p-5 text-center">الإجراء</th></tr></thead><tbody id="employeesTableBody" class="font-bold"></tbody></table></div>
             </section>
 
-            <section id="add-employee-form" class="hidden-section max-w-4xl mx-auto">
-                <div class="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
-                    <h2 class="text-2xl font-black mb-6">إضافة موظف جديد</h2>
-                    <form id="fullEmployeeForm" onsubmit="saveNewEmployee(event)" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="text-xs font-bold">الاسم</label><input type="text" id="f_name" required></div>
-                            <div><label class="text-xs font-bold">الرقم الوظيفي</label><input type="text" id="f_id" required></div>
-                            <div><label class="text-xs font-bold">القسم</label><input type="text" id="f_dept"></div>
-                            <div><label class="text-xs font-bold">المسمى الوظيفي</label><input type="text" id="f_pos"></div>
-                            <div><label class="text-xs font-bold">تاريخ الميلاد</label><input type="date" id="f_dob"></div>
-                            <div><label class="text-xs font-bold">بداية العمل</label><input type="date" id="f_start_date"></div>
-                            <div><label class="text-xs font-bold">المرتب</label><input type="number" id="f_salary"></div>
-                            <div><label class="text-xs font-bold">رصيد الإجازات</label><input type="number" id="f_leave_bal" value="30"></div>
-                            <div><label class="text-xs font-bold">رقم الهاتف</label><input type="tel" id="f_phone"></div>
+            <section id="add-employee-form" class="hidden-section max-w-5xl mx-auto no-print">
+                <div class="bg-white p-10 rounded-[3rem] border shadow-xl">
+                    <h2 class="text-3xl font-black text-blue-800 mb-8 flex justify-between"><span>إضافة موظف جديد</span><button onclick="showSection('dashboard')" class="text-xs bg-slate-100 px-3 py-1 rounded-lg">رجوع</button></h2>
+                    <form id="fullEmployeeForm" onsubmit="saveNewEmployee(event)" class="space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div><label>الاسم الكامل</label><input type="text" id="f_name" required></div>
+                            <div><label>الرقم الوظيفي</label><input type="text" id="f_id" required></div>
+                            <div><label>تاريخ الميلاد</label><input type="date" id="f_dob"></div>
+                            <div><label>القسم</label><input type="text" id="f_dept"></div>
+                            <div><label>المسمى الوظيفي</label><input type="text" id="f_pos"></div>
+                            <div><label>المرتب</label><input type="number" id="f_salary"></div>
+                            <div><label>رصيد الإجازات</label><input type="number" id="f_leave_bal" value="30"></div>
+                            <div><label>بداية العمل</label><input type="date" id="f_start_date" onchange="calcDurationInForm()"></div>
+                            <div class="md:col-span-1"><label class="text-blue-600 font-bold text-xs">مدة الخدمة</label><div id="form_duration" class="bg-blue-50 p-3 rounded-xl text-blue-800 text-xs h-[45px] flex items-center">--</div></div>
+                            <div><label>رقم الهاتف</label><input type="tel" id="f_phone"></div>
+                            <div><label>العنوان</label><input type="text" id="f_address"></div>
+                            <div><label>فصيلة الدم</label><input type="text" id="f_blood"></div>
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg">حفظ الموظف</button>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black text-xl shadow-lg">حفظ الموظف سحابياً</button>
                     </form>
                 </div>
             </section>
 
-            <section id="employee-profile" class="hidden-section space-y-6">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <button onclick="showSection('employees')" class="bg-white p-3 rounded-xl shadow-sm">⬅️</button>
-                        <div><h2 id="profile-name-header" class="text-2xl font-black">--</h2><p id="profile-job-header" class="text-blue-600 font-bold text-sm">--</p></div>
+            <section id="employee-profile" class="hidden-section space-y-8 pb-10">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-5">
+                        <button onclick="showSection('employees')" class="w-14 h-14 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-400 font-black no-print">⬅️</button>
+                        <div><h2 class="text-3xl font-black text-slate-800" id="p-name">--</h2><p class="text-blue-600 font-black text-sm" id="p-job">--</p></div>
                     </div>
-                    <div class="flex gap-2 no-print">
-                        <button onclick="openModal('modalAction')" class="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold">⚠️ إنذار</button>
-                        <button onclick="openModal('modalLeave')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">🌴 إجازة</button>
-                        <button onclick="prepareOvertimeModal()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold">⏳ إضافي</button>
+                    <div class="flex flex-wrap gap-2 no-print">
+                        <button onclick="window.print()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black">🖨️ طباعة</button>
+                        <button onclick="analyzeAI()" class="bg-purple-600 text-white px-4 py-2 rounded-xl text-[10px] font-black ai-pulse">✨ AI</button>
+                        <button onclick="openModal('modalSchedule')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black">🕒 الدوام</button>
+                        <button onclick="openModal('modalAction')" class="bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black">⚠️ إنذار</button>
+                        <button onclick="openModal('modalTask')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black">📋 مهمة</button>
+                        <button onclick="prepareOvertimeModal()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">⏳ إضافي</button>
+                        <button onclick="openModal('modalLeave')" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">🌴 إجازة</button>
+                        <button onclick="deleteProfile()" class="bg-red-50 text-red-600 border border-red-100 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-red-600 hover:text-white transition">🗑️ حذف</button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm text-center">
-                        <div class="w-20 h-20 bg-blue-100 rounded-full mx-auto flex items-center justify-center text-3xl text-blue-600 font-black mb-4" id="profile-avatar">?</div>
-                        <div class="flex justify-around border-t pt-4 text-[10px] font-bold">
-                            <div><p class="text-slate-400">إنذارات</p><p id="p-stat-a" class="text-red-600 text-lg">0</p></div>
-                            <div><p class="text-slate-400">إجازات</p><p id="p-stat-l" class="text-emerald-600 text-lg">0</p></div>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 font-bold">
+                    <div class="lg:col-span-4 space-y-8">
+                        <div class="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden text-center pb-8">
+                            <div class="h-24 bg-gradient-to-br from-blue-700 to-indigo-800"></div>
+                            <div class="w-24 h-24 bg-white rounded-full mx-auto -mt-12 shadow-lg flex items-center justify-center text-4xl text-blue-600 font-black" id="p-avatar">?</div>
+                            <h3 class="text-xl font-black mt-4" id="p-card-name">--</h3>
+                            <div class="mt-6 flex justify-around border-t pt-4 px-4 text-[10px]">
+                                <div><p class="text-slate-400">إنذارات</p><p class="text-red-600 text-lg" id="p-stat-act">0</p></div>
+                                <div><p class="text-slate-400">مهام</p><p class="text-blue-600 text-lg" id="p-stat-task">0</p></div>
+                                <div><p class="text-slate-400">إجازات</p><p class="text-emerald-600 text-lg" id="p-stat-leave">0</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-[2.5rem] border shadow-sm">
+                            <h4 class="font-black text-slate-800 mb-4 text-xs">🕒 الدوام الأسبوعي</h4>
+                            <div id="p-schedule-list" class="space-y-2 text-[10px]"></div>
                         </div>
                     </div>
-                    <div class="lg:col-span-2 bg-white p-8 rounded-[2rem] shadow-sm">
-                        <h4 class="font-bold border-b pb-2 mb-4">📁 السجل المعلوماتي</h4>
-                        <div id="detailed-info-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 font-bold text-xs"></div>
+
+                    <div class="lg:col-span-8 space-y-8">
+                        <div class="bg-white p-8 rounded-[3rem] border shadow-sm"><h3 class="font-black border-b pb-3 mb-6">📁 السجل المعلوماتي</h3><div id="p-info-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs"></div></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 no-print">
+                            <div class="bg-white rounded-[2rem] border overflow-hidden"><div class="p-4 bg-red-50 text-red-700 font-black text-xs border-b">⚠️ الإنذارات</div><table class="w-full text-right text-[10px]"><tbody id="p-act-table" class="divide-y divide-slate-50"></tbody></table></div>
+                            <div class="bg-white rounded-[2rem] border overflow-hidden"><div class="p-4 bg-emerald-50 text-emerald-700 font-black text-xs border-b">🌴 الإجازات</div><table class="w-full text-right text-[10px]"><tbody id="p-leave-table" class="divide-y divide-slate-50"></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-[2rem] border overflow-hidden no-print"><div class="p-4 bg-orange-50 text-orange-700 font-black text-xs border-b flex justify-between"><span>⏳ سجل الإضافي (حد 20 ساعة)</span><span id="p-overtime-stat" class="text-[9px] bg-white px-2 py-1 rounded border border-orange-200"></span></div><table class="w-full text-right text-[10px]"><tbody id="p-overtime-table" class="divide-y divide-slate-50"></tbody></table></div>
+                        <div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm no-print">
+                            <div class="p-5 bg-slate-900 text-white font-black flex justify-between items-center text-xs">
+                                <span>📋 سجل المهام</span>
+                                <select id="p-task-filter" onchange="filterTasksUI()" class="bg-slate-800 text-white text-[9px] border-none w-auto py-1">
+                                    <option value="الكل">فلترة: الكل</option>
+                                    <option value="عمليات">عمليات</option>
+                                    <option value="المكالمات">المكالمات</option>
+                                    <option value="رسائل الصفحة + تطبيق العميل">رسائل الصفحة + تطبيق العميل</option>
+                                    <option value="متابعة">متابعة</option>
+                                </select>
+                            </div>
+                            <table class="w-full text-right text-[10px]"><thead class="bg-slate-50 text-slate-400"><tr><th class="p-3">التاريخ</th><th class="p-3">المهمة</th><th class="p-3 text-center">جودة%</th><th class="p-3 text-center">العدد</th></tr></thead><tbody id="p-task-table" class="divide-y divide-slate-50"></tbody></table>
+                        </div>
                     </div>
                 </div>
             </section>
         </div>
     </main>
 
-    <div id="modalLeave" class="modal"><div class="bg-white rounded-3xl p-8 w-full max-w-md"><h3>طلب إجازة</h3><input type="date" id="leave_from" class="mt-4"><input type="date" id="leave_to" class="mt-2"><select id="leave_type" class="mt-2"><option>سنوية</option><option>مرضية</option></select><button onclick="saveLeave()" class="w-full bg-emerald-600 text-white py-3 rounded-xl mt-4">حفظ</button><button onclick="closeModal('modalLeave')" class="w-full mt-2 text-slate-400">إلغاء</button></div></div>
-    <div id="modalAction" class="modal"><div class="bg-white rounded-3xl p-8 w-full max-w-md"><h3>تسجيل إنذار</h3><select id="act_type" class="mt-4"><option>تأخير</option><option>كتابي</option></select><input type="date" id="act_date" class="mt-2"><textarea id="act_reason" class="mt-2" placeholder="السبب"></textarea><button onclick="saveAction()" class="w-full bg-red-600 text-white py-3 rounded-xl mt-4">حفظ</button><button onclick="closeModal('modalAction')" class="w-full mt-2 text-slate-400">إلغاء</button></div></div>
-    <div id="modalOvertime" class="modal"><div class="bg-white rounded-3xl p-8 w-full max-w-md"><h3>تسجيل إضافي</h3><input type="date" id="over_date" class="mt-4"><input type="number" id="over_hrs" placeholder="الساعات" class="mt-2"><button onclick="saveOvertime()" class="w-full bg-orange-600 text-white py-3 rounded-xl mt-4">حفظ</button><button onclick="closeModal('modalOvertime')" class="w-full mt-2 text-slate-400">إلغاء</button></div></div>
-
-    <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
-            authDomain: "hr-operation.firebaseapp.com",
-            projectId: "hr-operation",
-            storageBucket: "hr-operation.firebasestorage.app",
-            messagingSenderId: "498775599728",
-            appId: "1:498775599728:web:b195dea758f3cf415162b5"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const employeesCol = db.collection('employees');
-
-        let employees = [];
-        let currentEmpId = null;
-        let systemDate = new Date();
-        const weekDays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-
-        // Data Management
-        function loadData() {
-            employeesCol.onSnapshot(snapshot => {
-                employees = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
-                updateStats();
-                renderUpcomingBirthdays();
-                if (!document.getElementById('dashboard').classList.contains('hidden-section')) renderDashboardSchedule();
-                if (!document.getElementById('employees').classList.contains('hidden-section')) renderEmployeeList();
-            });
-        }
-
-        async function syncUpdate(emp) {
-            const { firestoreId, ...data } = emp;
-            await employeesCol.doc(firestoreId).update(data);
-        }
-
-        // Navigation
-        function showSection(id) {
-            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden-section'));
-            document.getElementById(id).classList.remove('hidden-section');
-            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            if(document.getElementById('link-'+id)) document.getElementById('link-'+id).classList.add('active');
-        }
-
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        // Employee Logic
-        async function saveNewEmployee(e) {
-            e.preventDefault();
-            const newEmp = {
-                id: document.getElementById('f_id').value,
-                name: document.getElementById('f_name').value,
-                details: {
-                    "القسم": document.getElementById('f_dept').value,
-                    "المسمى": document.getElementById('f_pos').value,
-                    "بداية العمل": document.getElementById('f_start_date').value,
-                    "تاريخ الميلاد": document.getElementById('f_dob').value,
-                    "المرتب": document.getElementById('f_salary').value,
-                    "الهاتف": document.getElementById('f_phone').value,
-                    "رصيد الإجازات": document.getElementById('f_leave_bal').value
-                },
-                schedule: {}, actions: [], leaves: [], overtime: []
-            };
-            await employeesCol.add(newEmp);
-            alert("تم الحفظ");
-            showSection('dashboard');
-        }
-
-        function renderEmployeeList(data = employees) {
-            document.getElementById('employeesTableBody').innerHTML = data.map(emp => `
-                <tr class="border-b hover:bg-slate-50">
-                    <td class="p-4">${emp.name}</td>
-                    <td class="p-4 text-slate-500">${emp.details['القسم']}</td>
-                    <td class="p-4 text-center"><button onclick="viewProfile('${emp.id}')" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs">عرض الملف</button></td>
-                </tr>
-            `).join('');
-        }
-
-        function viewProfile(id) {
-            currentEmpId = id;
-            const emp = employees.find(e => e.id == id);
-            if(!emp) return;
-
-            document.getElementById('profile-name-header').innerText = emp.name;
-            document.getElementById('profile-job-header').innerText = emp.details['المسمى'];
-            document.getElementById('profile-avatar').innerText = emp.name[0];
-            
-            // Statistics
-            document.getElementById('p-stat-a').innerText = (emp.actions || []).length;
-            document.getElementById('p-stat-l').innerText = (emp.leaves || []).length;
-
-            // Details & Work Duration
-            const start = new Date(emp.details['بداية العمل']);
-            const now = new Date(systemDate);
-            let diff = "";
-            if(start <= now) {
-                let years = now.getFullYear() - start.getFullYear();
-                let months = now.getMonth() - start.getMonth();
-                if (months < 0) { years--; months += 12; }
-                diff = `${years} سنة و ${months} شهر`;
-            }
-
-            let html = Object.entries(emp.details).map(([k,v]) => `<div class="bg-slate-50 p-3 rounded-xl border border-slate-100"><p class="text-[9px] text-slate-400 uppercase">${k}</p><p>${v || '-'}</p></div>`).join('');
-            html += `<div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-blue-800"><p class="text-[9px] uppercase">مدة الخدمة</p><p>${diff}</p></div>`;
-            
-            document.getElementById('detailed-info-grid').innerHTML = html;
-            showSection('employee-profile');
-        }
-
-        // Stats & Birthdays
-        function updateStats() {
-            document.getElementById('stat-emp-count').innerText = employees.length;
-            let a = 0, l = 0;
-            employees.forEach(e => { a += (e.actions || []).length; l += (e.leaves || []).length; });
-            document.getElementById('stat-action-count').innerText = a;
-            document.getElementById('stat-leave-count').innerText = l;
-        }
-
-        function renderUpcomingBirthdays() {
-            const currentMonth = new Date(systemDate).getMonth();
-            const list = employees.filter(e => {
-                if(!e.details['تاريخ الميلاد']) return false;
-                return new Date(e.details['تاريخ الميلاد']).getMonth() === currentMonth;
-            });
-            document.getElementById('birthdayList').innerHTML = list.map(e => `
-                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] font-bold">
-                    <span>${e.name}</span>
-                    <span class="text-blue-600">${e.details['تاريخ الميلاد']}</span>
-                </div>
-            `).join('') || '<p class="text-center text-xs text-slate-400 italic">لا توجد أعياد ميلاد هذا الشهر</p>';
-        }
-
-        // Actions
-        async function saveLeave() {
-            const emp = employees.find(e => e.id == currentEmpId);
-            emp.leaves.push({ type: document.getElementById('leave_type').value, from: document.getElementById('leave_from').value, to: document.getElementById('leave_to').value });
-            await syncUpdate(emp);
-            closeModal('modalLeave');
-            viewProfile(currentEmpId);
-        }
-
-        async function saveAction() {
-            const emp = employees.find(e => e.id == currentEmpId);
-            emp.actions.push({ type: document.getElementById('act_type').value, date: document.getElementById('act_date').value, reason: document.getElementById('act_reason').value });
-            await syncUpdate(emp);
-            closeModal('modalAction');
-            viewProfile(currentEmpId);
-        }
-
-        // Dashboard Schedule
-        function renderDashboardSchedule() {
-            const head = document.getElementById('dashboardScheduleHeadRow');
-            head.innerHTML = `<th class="p-3">الموظف</th>` + weekDays.map(d => `<th class="p-3">${d}</th>`).join('');
-            document.getElementById('dashboardScheduleTable').innerHTML = employees.map(emp => `
-                <tr class="border-b">
-                    <td class="p-3 bg-slate-50 sticky right-0 font-bold">${emp.name}</td>
-                    ${weekDays.map(d => `<td class="p-3 text-center text-blue-600">${(emp.schedule[d]||{from:'08:00'}).from}</td>`).join('')}
-                </tr>
-            `).join('');
-        }
-
-        function updateSystemDate() {
-            systemDate = new Date(document.getElementById('systemDateSelector').value);
-            loadData();
-        }
-
-        window.onload = () => {
-            document.getElementById('systemDateSelector').value = new Date().toISOString().split('T')[0];
-            loadData();
-        };
-    </script>
-</body>
-</html>
+    <div id="modalExportOvertime" class="modal"><div class="bg-white rounded-[2rem] w-full max-w-md p-8 relative shadow-2xl"><h3 class="text-xl font-black mb-6">📥 تحميل تقرير الإضافي</h3><div class="grid grid-cols-2 gap-4 text-xs font-bold"><div><label>من تاريخ</label><input type="date" id="exp_start"></div><div><label>إلى تاريخ</label><input type="date" id="exp_end"></div></div><button onclick="downloadOvertimeExcel()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black mt-6">📄 تحميل ملف Excel</button><button onclick="closeModal('modalExportOvertime')" class="w-full mt-2 text-slate-400 text-xs">إلغاء</button></div></div>
+    <div id="modalSchedule" class="modal"><div class="bg-white rounded-[2rem] w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto relative"><h3 class="text-xl font-black mb-6">🕒 تخصيص الدوام</h3><div id="scheduleInputs" class="space-y-4"></div><button onclick="saveSchedule()" class="w-full bg-indigo-700 text-white py-4 rounded-2xl font-black mt-6">حفظ الجدول الأسبوعي</button><button onclick="closeModal('modalSchedule')" class="w-full mt-2 text-slate-400 text-xs">إلغاء</button></div></div>
+    <div id="modalLeave" class="modal"><div class="bg-white rounded-[2rem] w-full max-w-md p-8 relative shadow-2xl"><h3 class="text-xl font-black text-emerald-600 mb-6">طلب إجازة</h3><div class="space-y-4 text-xs font-bold"><div><label>النوع</label><select id="l_type"><option>سنوية</option><option>مرضية</option><option>طارئة</option></select></div><div class="grid grid-cols-2 gap-4"><div><label>من</label><input type="date" id="l_from"></div><div><label>إلى</label><input type="date" id="l_to"></div></div><textarea id="
