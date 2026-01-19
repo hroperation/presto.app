@@ -387,7 +387,41 @@
     <script>
         const apiKey = ""; 
         const weekDays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-        let employees = JSON.parse(localStorage.getItem('hr_v17_data')) || [];
+     // إعدادات Firebase التي كانت موجودة في ملفك
+const firebaseConfig = {
+  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
+  authDomain: "hr-operation.firebaseapp.com",
+  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
+  projectId: "hr-operation",
+  storageBucket: "hr-operation.firebasestorage.app",
+  messagingSenderId: "498775599728",
+  appId: "1:498775599728:web:7159781682885915d31191"
+};
+
+// بدء تشغيل Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// مصفوفة الموظفين ستبدأ فارغة وتُملأ من السحابة
+let employees = []; 
+let currentEmpId = null;
+
+// دالة جلب البيانات من السحابة تلقائياً
+db.ref('employees').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // تحويل البيانات من كائنات Firebase إلى مصفوفة يفهمها كودك
+        employees = Object.keys(data).map(key => ({
+            firebaseId: key, // نحفظ هذا المعرف للحذف أو التعديل مستقبلاً
+            ...data[key]
+        }));
+    } else {
+        employees = [];
+    }
+    // تحديث الأرقام والجداول فور وصول البيانات
+    updateDashboardStats();
+    renderEmployeeList();
+});
         let currentEmpId = null;
 
         let systemDate = localStorage.getItem('hr_system_date') ? new Date(localStorage.getItem('hr_system_date')) : new Date();
@@ -827,16 +861,26 @@ function deleteLeave(i) {
         viewProfile(currentEmpId); 
     } 
 }
-        function saveNewEmployee(e) {
-            e.preventDefault(); const id = document.getElementById('f_id').value;
-            if(employees.some(emp => emp.id == id)) return alert("الرقم مسجل!");
-            employees.push({
-                id: id, name: document.getElementById('f_name').value,
-                details: { "القسم": document.getElementById('f_dept').value, "المسمى": document.getElementById('f_pos').value, "الراتب": document.getElementById('f_salary').value, "الهاتف": document.getElementById('f_phone').value, "تاريخ الميلاد": document.getElementById('f_dob').value, "فصيلة الدم": document.getElementById('f_blood').value, "العنوان": document.getElementById('f_address').value, "بداية العمل": document.getElementById('f_start_date').value, "رصيد الإجازات": document.getElementById('f_leave_bal').value, "الجنسية": document.getElementById('f_nat').value },
-                schedule: {}, actions: [], tasks: [], leaves: []
-            });
-            saveToStorage(); showSection('dashboard');
-        }
+        function saveNewEmployee(event) {
+    event.preventDefault();
+    
+    const newEmp = {
+        id: document.getElementById('f_id').value,
+        name: document.getElementById('f_name').value,
+        dept: document.getElementById('f_dept').value,
+        salary: document.getElementById('f_salary').value,
+        startDate: document.getElementById('f_start_date').value,
+        // إضافة بقية الحقول التي تحتاجها هنا...
+        actions: [], leaves: [], tasks: [], overtime: []
+    };
+
+    // الحفظ في Firebase (السحابة)
+    db.ref('employees').push(newEmp).then(() => {
+        alert("تم الحفظ في السحابة بنجاح!");
+        document.getElementById('fullEmployeeForm').reset();
+        showSection('dashboard');
+    });
+}
 
         function searchEmployees() { const v = document.getElementById('empSearch').value.toLowerCase(); renderEmployeeList(employees.filter(e => e.name.toLowerCase().includes(v) || e.id.toLowerCase().includes(v))); }
         function renderEmployeeList(data = employees) { document.getElementById('employeesTableBody').innerHTML = data.map(emp => `<tr class="hover:bg-slate-50 border-b font-bold"><td class="p-5">${emp.name} <span class="text-slate-300">#${emp.id}</span></td><td class="p-5 text-slate-500">${emp.details['القسم']}</td><td class="p-5 text-center"><button onclick="viewProfile('${emp.id}')" class="bg-blue-50 text-blue-700 px-8 py-2 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all">عرض</button></td></tr>`).join(''); }
@@ -1106,29 +1150,9 @@ function importFullBackup(event) {
     };
     reader.readAsText(file);
 }
-		// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAAe-WjGh9PtL932wxJPgLSuaslmJWaDC8",
-  authDomain: "hr-operation.firebaseapp.com",
-  databaseURL: "https://hr-operation-default-rtdb.firebaseio.com",
-  projectId: "hr-operation",
-  storageBucket: "hr-operation.firebasestorage.app",
-  messagingSenderId: "498775599728",
-  appId: "1:498775599728:web:b195dea758f3cf415162b5",
-  measurementId: "G-YQTYHQ40NN"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
     </script>
 </body>
 </html>
+
 
