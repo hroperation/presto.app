@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/presto.app/">
     
-    <title>Presto HR | النظام الشامل</title>
+    <title>Presto OP</title>
     
     <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -44,6 +44,7 @@
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'El Messiri', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
+        /* --- Login --- */
         #login-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 5000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-card { background: var(--bg-card); padding: 40px; border-radius: 30px; box-shadow: var(--shadow-md); width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--border-color); }
         .login-logo { width: 150px; margin-bottom: 20px; }
@@ -52,6 +53,7 @@
         .login-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; font-size: 16px; }
         .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
+        /* --- Layout --- */
         .sidebar { width: 85px; background: var(--sidebar-bg); margin: 15px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; padding: 30px 0; box-shadow: var(--shadow-md); z-index: 1000; }
         .sidebar:hover { width: 260px; align-items: stretch; padding: 30px 20px; }
         .sidebar-logo { height: 40px; margin-bottom: 50px; object-fit: contain; padding: 0 10px; }
@@ -563,6 +565,7 @@
             tbody.innerHTML = rowHtml;
         }
 
+        // --- Core UI Updates ---
         function updateUI() {
             const tableBody = document.getElementById('employeesTableBody');
             const countEl = document.getElementById('count-home');
@@ -669,14 +672,28 @@
             }
         }
 
+        // --- Helper Functions ---
         function calculateBalance(joiningDate, takenDays, initialBalance = 0) {
             const manualBalance = parseFloat(initialBalance || 0);
             if (!joiningDate) return manualBalance;
-            const start = new Date(joiningDate);
+
             const now = new Date();
-            const monthDiff = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-            const totalEarned = (monthDiff + 1) * 2.5; 
-            const finalBalance = (manualBalance + totalEarned) - takenDays;
+            const currentYear = now.getFullYear();
+            const joinDate = new Date(joiningDate);
+
+            // تحديد نقطة البداية للحساب (1 يناير أو تاريخ الانضمام إذا كان في نفس السنة)
+            let startDate = new Date(currentYear, 0, 1); 
+            if (joinDate > startDate) {
+                startDate = joinDate;
+            }
+
+            // حساب عدد الأشهر
+            const monthDiff = (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+            
+            // الرصيد المكتسب في هذه السنة
+            const earnedThisYear = Math.max(0, monthDiff + 1) * 2.5;
+
+            const finalBalance = (manualBalance + earnedThisYear) - takenDays;
             return Math.max(0, finalBalance).toFixed(1);
         }
 
@@ -711,6 +728,7 @@
             return total;
         }
 
+        // --- Profile View (With Edit/Delete Buttons) ---
         window.viewProfile = async (id) => {
             const emp = allEmployees.find(e => e.id === id);
             if (!emp) return;
@@ -722,7 +740,16 @@
             const warnings = await fetchActionData('warnings', id);
             
             let takenDays = 0;
-            leaves.forEach(l => { if (l.type === 'سنوية' || l.type === 'طارئة') takenDays += parseFloat(l.daysCount || 0); });
+            const currentYear = new Date().getFullYear();
+
+            leaves.forEach(l => { 
+                const leaveDate = new Date(l.date);
+                if (leaveDate.getFullYear() === currentYear) {
+                    if (l.type === 'سنوية' || l.type === 'طارئة') {
+                        takenDays += parseFloat(l.daysCount || 0);
+                    }
+                }
+            });
             const currentBalance = calculateBalance(emp.joining, takenDays, emp.initialBalance);
             
             const profileContent = document.getElementById('profile-content');
@@ -757,6 +784,7 @@
             showView('profile');
         };
 
+        // --- Modals Logic with Limits ---
         window.openActionModal = async (type, empDocId, currentBalance = 0) => {
             const modal = document.getElementById('actionModal');
             const title = document.getElementById('action-modal-title');
@@ -767,34 +795,50 @@
             if (type === 'leave') {
                 title.innerText = "طلب إجازة جديدة";
                 body.innerHTML = `
-                    <div class="form-group"><label>نوع الإجازة</label><select id="act-leave-type"><option value="سنوية">سنوية (تخصم من الرصيد)</option><option value="طارئة">طارئة (تخصم من الرصيد)</option><option value="مرضية">مرضية (لا تخصم)</option></select></div>
+                    <div class="form-group">
+                        <label>نوع الإجازة</label>
+                        <select id="act-leave-type">
+                            <option value="سنوية">سنوية (تخصم من الرصيد)</option>
+                            <option value="طارئة">طارئة (تخصم من الرصيد)</option>
+                            <option value="مرضية">مرضية (لا تخصم)</option>
+                        </select>
+                    </div>
                     <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
                     <div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div>
                     <div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>
                 `;
+                
                 saveBtn.onclick = async () => {
                     const lType = document.getElementById('act-leave-type').value;
                     const lDays = parseFloat(document.getElementById('act-days-count').value);
                     const lDate = document.getElementById('act-date').value;
 
+                    // 1. تحقق أساسي
                     if (!lDate) return alert("يرجى تحديد التاريخ");
-                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) { return alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`); }
+                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) {
+                        alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`);
+                        return;
+                    }
 
-                    // Conflict Check
+                    // 2. Capacity Planning & Conflict Check
                     const allLeavesSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'leaves'));
                     const morningShifts = ["08:00 - 15:00", "09:00 - 16:00"]; 
 
                     for (let i = 0; i < lDays; i++) {
                         let checkDate = new Date(lDate);
                         checkDate.setDate(checkDate.getDate() + i);
+                        const dateStr = checkDate.toISOString().split('T')[0];
                         const dayIndex = checkDate.getDay(); 
                         const dayName = days[dayIndex]; 
 
                         const emp = allEmployees.find(e => e.id === empDocId);
                         const myShift = emp.schedule ? emp.schedule[dayName] : "عطلة";
+                        
                         if (!myShift || myShift === "عطلة") continue;
 
                         const isMyShiftMorning = morningShifts.includes(myShift);
+                        const myGroupName = isMyShiftMorning ? "الفترة الصباحية" : "الفترة المسائية";
+
                         let conflictCount = 0;
 
                         allLeavesSnap.forEach(doc => {
@@ -804,24 +848,38 @@
                             lEnd.setDate(lEnd.getDate() + (parseFloat(leave.daysCount) - 1));
 
                             if (checkDate >= lStart && checkDate <= lEnd) {
-                                if (leave.empDocId === empDocId) throw new Error("Self Conflict"); 
+                                if (leave.empDocId === empDocId) {
+                                    alert("يوجد طلب إجازة سابق لنفس الموظف في هذه الفترة.");
+                                    throw new Error("Self Conflict"); 
+                                }
+
                                 const otherEmp = allEmployees.find(e => e.id === leave.empDocId);
                                 if (otherEmp && otherEmp.schedule) {
                                     const otherShift = otherEmp.schedule[dayName];
                                     if (otherShift && otherShift !== "عطلة") {
                                         const isOtherMorning = morningShifts.includes(otherShift);
-                                        if (isMyShiftMorning === isOtherMorning) conflictCount++;
+                                        if (isMyShiftMorning === isOtherMorning) {
+                                            conflictCount++;
+                                        }
                                     }
                                 }
                             }
                         });
 
-                        if (conflictCount >= 1) return alert(`عذراً، لا يمكن تسجيل الإجازة. تم استنفاد العدد المسموح.`);
+                        if (conflictCount >= 1) {
+                            alert(`عذراً، لا يمكن تسجيل الإجازة يوم ${dateStr} (${dayName}).\nالسبب: تم استنفاد العدد المسموح (موظف واحد) لـ ${myGroupName}.`);
+                            return;
+                        }
                     }
 
-                    saveAction('leaves', empDocId, { type: lType, date: lDate, daysCount: lDays, note: document.getElementById('act-note').value });
+                    saveAction('leaves', empDocId, { 
+                        type: lType,
+                        date: lDate,
+                        daysCount: lDays,
+                        note: document.getElementById('act-note').value
+                    });
                 };
-            } 
+            }
             else if (type === 'permission') {
                 title.innerText = "طلب إذن خروج";
                 const usedPerms = await calculateMonthlyUnits('permissions', empDocId);
