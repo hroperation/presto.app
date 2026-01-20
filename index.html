@@ -703,16 +703,108 @@
 
             if (type === 'leave') {
                 title.innerText = "طلب إجازة جديدة";
-                body.innerHTML = `<div class="form-group"><label>نوع الإجازة</label><select id="act-leave-type"><option value="سنوية">سنوية (تخصم من الرصيد)</option><option value="طارئة">طارئة (تخصم من الرصيد)</option><option value="مرضية">مرضية (لا تخصم)</option></select></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div><div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>`;
-                saveBtn.onclick = () => {
+                body.innerHTML = `
+                    <div class="form-group">
+                        <label>نوع الإجازة</label>
+                        <select id="act-leave-type">
+                            <option value="سنوية">سنوية (تخصم من الرصيد)</option>
+                            <option value="طارئة">طارئة (تخصم من الرصيد)</option>
+                            <option value="مرضية">مرضية (لا تخصم)</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
+                    <div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div>
+                    <div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>
+                `;
+                
+                saveBtn.onclick = async () => {
                     const lType = document.getElementById('act-leave-type').value;
                     const lDays = parseFloat(document.getElementById('act-days-count').value);
                     const lDate = document.getElementById('act-date').value;
-                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) { alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`); return; }
+
+                    // 1. تحقق أساسي
                     if (!lDate) return alert("يرجى تحديد التاريخ");
-                    saveAction('leaves', empDocId, { type: lType, date: lDate, daysCount: lDays, note: document.getElementById('act-note').value });
+                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) {
+                        alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`);
+                        return;
+                    }
+
+                    // 2. جلب جميع الإجازات لفحص التعارض والعدد المسموح
+                    const allLeavesSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'leaves'));
+                    
+                    // تعريف المجموعات
+                    const morningShifts = ["08:00 - 15:00", "09:00 - 16:00"]; 
+                    // أي توقيت آخر يعتبر مجموعة مسائية (12-19, 16-23, 19-02)
+
+                    // حلقة تكرارية لفحص كل يوم من أيام الإجازة المطلوبة
+                    for (let i = 0; i < lDays; i++) {
+                        let checkDate = new Date(lDate);
+                        checkDate.setDate(checkDate.getDate() + i);
+                        
+                        // تجهيز التاريخ واسم اليوم للمقارنة
+                        const dateStr = checkDate.toISOString().split('T')[0];
+                        const dayIndex = checkDate.getDay(); // 0 = الأحد
+                        const dayName = days[dayIndex]; // مصفوفة الأيام العالمية
+
+                        // 1. معرفة دوام الموظف الطالب في هذا اليوم
+                        const myShift = emp.schedule ? emp.schedule[dayName] : "عطلة";
+                        
+                        // إذا كان الموظف في عطلة هذا اليوم، لا نحسب تعارض
+                        if (!myShift || myShift === "عطلة") continue;
+
+                        const isMyShiftMorning = morningShifts.includes(myShift);
+                        const myGroupName = isMyShiftMorning ? "الفترة الصباحية" : "الفترة المسائية";
+
+                        // 2. عد الموظفين الآخرين في إجازة في نفس اليوم ونفس المجموعة
+                        let conflictCount = 0;
+
+                        allLeavesSnap.forEach(doc => {
+                            const leave = doc.data();
+                            
+                            // هل الإجازة تغطي هذا التاريخ؟
+                            const lStart = new Date(leave.date);
+                            const lEnd = new Date(leave.date);
+                            lEnd.setDate(lEnd.getDate() + (parseFloat(leave.daysCount) - 1));
+
+                            if (checkDate >= lStart && checkDate <= lEnd) {
+                                // وجدنا إجازة في هذا التاريخ، لنتحقق من هو صاحبها
+                                if (leave.empDocId === empDocId) {
+                                    alert("يوجد طلب إجازة سابق لنفس الموظف في هذه الفترة.");
+                                    throw new Error("Self Conflict"); // إيقاف التنفيذ
+                                }
+
+                                const otherEmp = allEmployees.find(e => e.id === leave.empDocId);
+                                if (otherEmp && otherEmp.schedule) {
+                                    const otherShift = otherEmp.schedule[dayName];
+                                    if (otherShift && otherShift !== "عطلة") {
+                                        const isOtherMorning = morningShifts.includes(otherShift);
+                                        
+                                        // الشرط الحاسم: هل هو في نفس مجموعتي؟
+                                        if (isMyShiftMorning === isOtherMorning) {
+                                            conflictCount++;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        // 3. الحكم النهائي (الحد المسموح = 1 في الإجازة)
+                        // إذا كان العدد 1 أو أكثر، نرفض الطلب الجديد ليصبح الحد الأقصى هو 1 فقط
+                        if (conflictCount >= 1) {
+                            alert(`عذراً، لا يمكن تسجيل الإجازة يوم ${dateStr} (${dayName}).\nالسبب: تم استنفاد العدد المسموح (موظف واحد) لـ ${myGroupName}.`);
+                            return;
+                        }
+                    }
+
+                    // 3. الحفظ إذا نجحت كل الفحوصات
+                    saveAction('leaves', empDocId, { 
+                        type: lType,
+                        date: lDate,
+                        daysCount: lDays,
+                        note: document.getElementById('act-note').value
+                    });
                 };
-            } 
+            }
             else if (type === 'permission') {
                 title.innerText = "طلب إذن خروج";
                 const usedPerms = await calculateMonthlyUnits('permissions', empDocId);
@@ -990,4 +1082,5 @@
     </script>
 </body>
 </html>
+
 
