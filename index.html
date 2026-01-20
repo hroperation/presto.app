@@ -44,7 +44,7 @@
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'El Messiri', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- تسجيل الدخول --- */
+        /* --- Login --- */
         #login-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 5000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-card { background: var(--bg-card); padding: 40px; border-radius: 30px; box-shadow: var(--shadow-md); width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--border-color); }
         .login-logo { width: 150px; margin-bottom: 20px; }
@@ -53,7 +53,7 @@
         .login-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; font-size: 16px; }
         .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
-        /* --- التصميم العام --- */
+        /* --- Layout --- */
         .sidebar { width: 85px; background: var(--sidebar-bg); margin: 15px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; padding: 30px 0; box-shadow: var(--shadow-md); z-index: 1000; }
         .sidebar:hover { width: 260px; align-items: stretch; padding: 30px 20px; }
         .sidebar-logo { height: 40px; margin-bottom: 50px; object-fit: contain; padding: 0 10px; }
@@ -84,7 +84,6 @@
         .schedule-table td:first-child { background: var(--secondary); color: white; font-weight: 700; vertical-align: middle; border-radius: 18px; font-size: 13px; }
         .emp-tag { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 5px 10px; border-radius: 10px; display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; box-shadow: 0 3px 6px rgba(255,107,74,0.2); animation: fadeIn 0.3s ease; }
 
-        /* --- بروفايل الموظف المصغر --- */
         .profile-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 30px; background: var(--bg-card); padding: 15px 20px; border-radius: 20px; border: 1px solid var(--border-color); }
         .profile-right-part { display: flex; align-items: center; gap: 15px; }
         .profile-left-actions { display: flex; align-items: center; gap: 12px; }
@@ -108,7 +107,6 @@
         .action-card-btn i { font-size: 24px; color: var(--primary); }
         .action-card-btn span { font-weight: 700; font-size: 13px; }
 
-        /* --- أزرار التعديل والحذف --- */
         .btn-icon { background:none; border:none; cursor:pointer; font-size:15px; padding:5px 8px; transition:0.2s; border-radius:5px; }
         .btn-icon.edit { color: #3498db; background: rgba(52, 152, 219, 0.1); }
         .btn-icon.delete { color: #e74c3c; background: rgba(231, 76, 60, 0.1); margin-right: 5px; }
@@ -134,7 +132,6 @@
         .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
         .badge-success { background: #d4edda; color: #155724; }
 
-        /* --- تحسينات الجوال --- */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             .sidebar { width: 100%; height: 70px; position: fixed; bottom: 0; left: 0; margin: 0; border-radius: 20px 20px 0 0; flex-direction: row; justify-content: space-around; padding: 0; z-index: 2000; background: var(--bg-card); border-top: 1px solid var(--border-color); }
@@ -250,6 +247,28 @@
                                     <tr data-shift="16:00 - 23:00"><td>16:00 - 23:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                                     <tr data-shift="19:00 - 02:00"><td>19:00 - 02:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                                 </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 25px;">
+                        <h3><i class="fas fa-plane-slash" style="color: var(--danger);"></i> سجل الإجازات الأسبوعي</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 100px; background: var(--bg-main);">اليوم</th>
+                                        <th>الأحد <span id="d-0" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>الاثنين <span id="d-1" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>الثلاثاء <span id="d-2" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>الأربعاء <span id="d-3" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>الخميس <span id="d-4" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>الجمعة <span id="d-5" style="font-size:10px; display:block; color:#888"></span></th>
+                                        <th>السبت <span id="d-6" style="font-size:10px; display:block; color:#888"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weekly-leaves-body">
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -424,7 +443,9 @@
 
         let currentUser = null;
         let allEmployees = [];
+        let allLeavesGlobal = []; 
         let unsubscribeSnapshot = null;
+        let unsubscribeLeaves = null;
 
         onAuthStateChanged(auth, (user) => {
             const loadingScreen = document.getElementById('loading-screen');
@@ -443,6 +464,7 @@
             } else {
                 currentUser = null;
                 if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+                if(unsubscribeLeaves) { unsubscribeLeaves(); unsubscribeLeaves = null; }
                 if(loadingScreen) loadingScreen.style.display = 'none';
                 if(mainApp) mainApp.classList.add('hidden');
                 if(loginView) loginView.classList.remove('hidden');
@@ -484,8 +506,8 @@
 
         function startListening() {
             if (!currentUser) return;
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
-            unsubscribeSnapshot = onSnapshot(query(colRef), (snap) => {
+            const empColRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
+            unsubscribeSnapshot = onSnapshot(query(empColRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
@@ -495,6 +517,52 @@
                    if(activeId) viewProfile(activeId);
                 }
             });
+
+            const leavesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
+            unsubscribeLeaves = onSnapshot(query(leavesColRef), (snap) => {
+                allLeavesGlobal = [];
+                snap.forEach(docSnap => allLeavesGlobal.push(docSnap.data()));
+                updateWeeklyLeavesTable();
+            });
+        }
+
+        function updateWeeklyLeavesTable() {
+            const tbody = document.getElementById('weekly-leaves-body');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            const curr = new Date();
+            const first = curr.getDate() - curr.getDay(); 
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                let day = new Date(curr.setDate(first + i));
+                const dateStr = day.toISOString().slice(0, 10); 
+                weekDates.push(dateStr);
+                const headerDate = document.getElementById(`d-${i}`);
+                if(headerDate) headerDate.innerText = `${day.getDate()}/${day.getMonth()+1}`;
+            }
+            let rowHtml = '<tr><td style="font-weight:bold; color:var(--text-muted);">المجازين</td>';
+            weekDates.forEach(dateStr => {
+                rowHtml += '<td>';
+                const activeLeaves = allLeavesGlobal.filter(leave => {
+                    const startDate = new Date(leave.date);
+                    const endDate = new Date(leave.date);
+                    endDate.setDate(endDate.getDate() + (parseFloat(leave.daysCount) - 1));
+                    const targetDate = new Date(dateStr);
+                    return targetDate >= startDate && targetDate <= endDate;
+                });
+                activeLeaves.forEach(leave => {
+                    const emp = allEmployees.find(e => e.id === leave.empDocId);
+                    if (emp) {
+                        let color = "var(--danger)"; 
+                        if (leave.type === "مرضية") color = "#f1c40f"; 
+                        if (leave.type === "طارئة") color = "#e67e22"; 
+                        rowHtml += `<span class="emp-tag" style="background:${color}; color:white; font-size:10px; margin-bottom:3px;">${emp.name.split(' ')[0]}</span>`;
+                    }
+                });
+                rowHtml += '</td>';
+            });
+            rowHtml += '</tr>';
+            tbody.innerHTML = rowHtml;
         }
 
         // --- Core UI Updates ---
@@ -531,6 +599,7 @@
             updateDashboardStats();
             updateBirthdayList();
             loadReminders();
+            updateWeeklyLeavesTable();
         }
 
         window.filterEmployees = () => updateUI();
@@ -729,48 +798,37 @@
                         return;
                     }
 
-                    // 2. جلب جميع الإجازات لفحص التعارض والعدد المسموح
+                    // 2. Capacity Planning & Conflict Check
                     const allLeavesSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'leaves'));
-                    
-                    // تعريف المجموعات
                     const morningShifts = ["08:00 - 15:00", "09:00 - 16:00"]; 
-                    // أي توقيت آخر يعتبر مجموعة مسائية (12-19, 16-23, 19-02)
 
-                    // حلقة تكرارية لفحص كل يوم من أيام الإجازة المطلوبة
                     for (let i = 0; i < lDays; i++) {
                         let checkDate = new Date(lDate);
                         checkDate.setDate(checkDate.getDate() + i);
-                        
-                        // تجهيز التاريخ واسم اليوم للمقارنة
                         const dateStr = checkDate.toISOString().split('T')[0];
-                        const dayIndex = checkDate.getDay(); // 0 = الأحد
-                        const dayName = days[dayIndex]; // مصفوفة الأيام العالمية
+                        const dayIndex = checkDate.getDay(); 
+                        const dayName = days[dayIndex]; 
 
-                        // 1. معرفة دوام الموظف الطالب في هذا اليوم
+                        const emp = allEmployees.find(e => e.id === empDocId);
                         const myShift = emp.schedule ? emp.schedule[dayName] : "عطلة";
                         
-                        // إذا كان الموظف في عطلة هذا اليوم، لا نحسب تعارض
                         if (!myShift || myShift === "عطلة") continue;
 
                         const isMyShiftMorning = morningShifts.includes(myShift);
                         const myGroupName = isMyShiftMorning ? "الفترة الصباحية" : "الفترة المسائية";
 
-                        // 2. عد الموظفين الآخرين في إجازة في نفس اليوم ونفس المجموعة
                         let conflictCount = 0;
 
                         allLeavesSnap.forEach(doc => {
                             const leave = doc.data();
-                            
-                            // هل الإجازة تغطي هذا التاريخ؟
                             const lStart = new Date(leave.date);
                             const lEnd = new Date(leave.date);
                             lEnd.setDate(lEnd.getDate() + (parseFloat(leave.daysCount) - 1));
 
                             if (checkDate >= lStart && checkDate <= lEnd) {
-                                // وجدنا إجازة في هذا التاريخ، لنتحقق من هو صاحبها
                                 if (leave.empDocId === empDocId) {
                                     alert("يوجد طلب إجازة سابق لنفس الموظف في هذه الفترة.");
-                                    throw new Error("Self Conflict"); // إيقاف التنفيذ
+                                    throw new Error("Self Conflict"); 
                                 }
 
                                 const otherEmp = allEmployees.find(e => e.id === leave.empDocId);
@@ -778,8 +836,6 @@
                                     const otherShift = otherEmp.schedule[dayName];
                                     if (otherShift && otherShift !== "عطلة") {
                                         const isOtherMorning = morningShifts.includes(otherShift);
-                                        
-                                        // الشرط الحاسم: هل هو في نفس مجموعتي؟
                                         if (isMyShiftMorning === isOtherMorning) {
                                             conflictCount++;
                                         }
@@ -788,15 +844,12 @@
                             }
                         });
 
-                        // 3. الحكم النهائي (الحد المسموح = 1 في الإجازة)
-                        // إذا كان العدد 1 أو أكثر، نرفض الطلب الجديد ليصبح الحد الأقصى هو 1 فقط
                         if (conflictCount >= 1) {
                             alert(`عذراً، لا يمكن تسجيل الإجازة يوم ${dateStr} (${dayName}).\nالسبب: تم استنفاد العدد المسموح (موظف واحد) لـ ${myGroupName}.`);
                             return;
                         }
                     }
 
-                    // 3. الحفظ إذا نجحت كل الفحوصات
                     saveAction('leaves', empDocId, { 
                         type: lType,
                         date: lDate,
@@ -1012,75 +1065,6 @@
             };
             reader.readAsText(file); input.value = ''; 
         };
-
-        // --- Reminders ---
-        window.addReminder = () => {
-            const modal = document.getElementById('reminderModal');
-            const input = document.getElementById('new-reminder-text');
-            input.value = ""; modal.style.display = 'flex'; setTimeout(() => input.focus(), 100);
-        };
-        window.closeReminderModal = () => { document.getElementById('reminderModal').style.display = 'none'; };
-        window.saveNewReminder = () => {
-            const input = document.getElementById('new-reminder-text');
-            const text = input.value;
-            if (text && text.trim() !== "") {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                reminders.push(text.trim());
-                localStorage.setItem('my_reminders', JSON.stringify(reminders));
-                loadReminders(); closeReminderModal(); showToast("تم إضافة التذكير");
-            } else { alert("يرجى كتابة نص التذكير"); }
-        };
-        function loadReminders() {
-            const listEl = document.getElementById('reminder-list');
-            if (!listEl) return;
-            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-            if (reminders.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;"><i class="far fa-sticky-note" style="font-size:20px; margin-bottom:5px;"></i><p style="font-size:11px; margin:0;">لا توجد تذكيرات</p></div>'; return; }
-            let html = '';
-            reminders.forEach((text, index) => {
-                html += `<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"><span style="font-size: 13px; line-height: 1.4; width: 85%; word-wrap: break-word;">${text}</span><button onclick="deleteReminder(${index})" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 14px; padding: 0 5px; opacity: 0.8; transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8"><i class="fas fa-trash-alt"></i></button></div>`;
-            });
-            listEl.innerHTML = html;
-        }
-        window.deleteReminder = (index) => {
-            if (confirm("حذف هذا التذكير؟")) {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                reminders.splice(index, 1);
-                localStorage.setItem('my_reminders', JSON.stringify(reminders));
-                loadReminders();
-            }
-        };
-
-        // --- Overtime Page ---
-        let currentOvertimeData = []; 
-        window.previewOvertimeData = async () => {
-            const dateFrom = document.getElementById('overtime-from').value;
-            const dateTo = document.getElementById('overtime-to').value;
-            const tbody = document.getElementById('overtime-report-body');
-            const totalEl = document.getElementById('total-month-hours');
-            if (!dateFrom || !dateTo) return;
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner" style="width:30px;height:30px;border-width:3px;margin:20px auto;"></div></td></tr>';
-            currentOvertimeData = []; let totalHours = 0;
-            try {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'overtime');
-                const snap = await getDocs(query(colRef));
-                snap.forEach(doc => { const data = doc.data(); if (data.date >= dateFrom && data.date <= dateTo) { const emp = allEmployees.find(e => e.id === data.empDocId); currentOvertimeData.push({ date: data.date, empName: emp ? emp.name : 'موظف محذوف', dept: emp ? emp.dept : '-', hours: parseFloat(data.hours || 0), reason: data.reason || '-' }); totalHours += parseFloat(data.hours || 0); } });
-                currentOvertimeData.sort((a, b) => new Date(a.date) - new Date(b.date));
-                tbody.innerHTML = "";
-                if (currentOvertimeData.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">لا توجد سجلات في هذه الفترة</td></tr>'; } 
-                else { currentOvertimeData.forEach(item => { tbody.innerHTML += `<tr><td>${item.date}</td><td style="font-weight:bold;">${item.empName}</td><td>${item.dept}</td><td style="color:var(--success); font-weight:bold;">${item.hours}</td><td>${item.reason}</td></tr>`; }); }
-                totalEl.innerText = totalHours;
-            } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">حدث خطأ في جلب البيانات</td></tr>'; }
-        };
-
-        window.downloadOvertimeCSV = () => {
-            if (currentOvertimeData.length === 0) { alert("لا توجد بيانات ظاهرة لتحميلها."); return; }
-            let csvContent = "\uFEFF"; csvContent += "التاريخ,اسم الموظف,القسم,عدد الساعات,سبب العمل الإضافي\n";
-            currentOvertimeData.forEach(row => { const cleanReason = (row.reason || "").replace(/,/g, " "); csvContent += `${row.date},${row.empName},${row.dept},${row.hours},${cleanReason}\n`; });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url);
-            const fromDate = document.getElementById('overtime-from').value; const toDate = document.getElementById('overtime-to').value; link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        };
     </script>
 </body>
 </html>
-
-
