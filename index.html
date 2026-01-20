@@ -423,52 +423,7 @@
             <div style="display: flex; gap: 15px; margin-top: 25px;">
                 // --- استبدل دوال التذكير القديمة بهذا الكود ---
 
-        // 1. فتح النافذة
-        window.addReminder = () => {
-            const modal = document.getElementById('reminderModal');
-            const input = document.getElementById('new-reminder-text');
-            if (modal) {
-                if(input) input.value = ""; 
-                modal.style.display = 'flex';
-            }
-        };
-
-        // 2. إغلاق النافذة
-        window.closeReminderModal = () => {
-            const modal = document.getElementById('reminderModal');
-            if (modal) modal.style.display = 'none';
-        };
-
-        // 3. حفظ التذكير
-        window.saveNewReminder = () => {
-            const text = document.getElementById('new-reminder-text').value;
-            if (text && text.trim() !== "") {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                reminders.push(text.trim());
-                localStorage.setItem('my_reminders', JSON.stringify(reminders));
-                loadReminders(); 
-                window.closeReminderModal();
-            }
-        };
-
-        // 4. حذف تذكير
-        window.deleteReminder = (index) => {
-            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-            reminders.splice(index, 1);
-            localStorage.setItem('my_reminders', JSON.stringify(reminders));
-            loadReminders();
-        };
-
-        // 5. عرض التذكيرات (مهم جداً إضافة Try-Catch هنا)
-        function loadReminders() {
-            const listEl = document.getElementById('reminder-list');
-            if (!listEl) return;
-            try {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                if (reminders.length === 0) {
-                    listEl.innerHTML = '<p style="text-align:center; opacity:0.6; font-size:11px;">لا توجد تذكيرات</p>';
-                } else {
-                    listEl.innerHTML = reminders.map((t, i) => `
+    
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.1); padding:10px; border-radius:12px;">
                             <span style="font-size:12px;">${t}</span>
                             <button onclick="deleteReminder(${i})" style="border:none; background:none; color:#ff6b6b; cursor:pointer;">
@@ -490,7 +445,69 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+// --- دوال التذكير (ضعها هنا داخل السكربت) ---
 
+    window.addReminder = () => {
+        const modal = document.getElementById('reminderModal');
+        const input = document.getElementById('new-reminder-text');
+        if (modal) {
+            if(input) input.value = ""; 
+            modal.style.display = 'flex';
+        } else {
+            console.error("لم يتم العثور على نافذة التذكير");
+        }
+    };
+
+    window.closeReminderModal = () => {
+        const modal = document.getElementById('reminderModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.saveNewReminder = () => {
+        const text = document.getElementById('new-reminder-text').value;
+        if (text && text.trim() !== "") {
+            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+            reminders.push(text.trim());
+            localStorage.setItem('my_reminders', JSON.stringify(reminders));
+            loadReminders(); 
+            window.closeReminderModal();
+        } else {
+            alert("يرجى كتابة نص التذكير");
+        }
+    };
+
+    window.deleteReminder = (index) => {
+        if(confirm("هل أنت متأكد من حذف هذا التذكير؟")) {
+            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+            reminders.splice(index, 1);
+            localStorage.setItem('my_reminders', JSON.stringify(reminders));
+            loadReminders();
+        }
+    };
+
+    // هذه الدالة ضرورية لعرض التذكيرات
+    function loadReminders() {
+        const listEl = document.getElementById('reminder-list');
+        if (!listEl) return;
+        try {
+            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+            if (reminders.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center; opacity:0.6; font-size:11px; padding:10px;">لا توجد تذكيرات</p>';
+            } else {
+                listEl.innerHTML = reminders.map((t, i) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(255,255,255,0.1); padding:10px; border-radius:12px;">
+                        <span style="font-size:12px; line-height:1.4; flex:1;">${t}</span>
+                        <button onclick="deleteReminder(${i})" style="border:none; background:none; color:#ff6b6b; cursor:pointer; padding:0 5px;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            console.error("Error loading reminders", e);
+            localStorage.setItem('my_reminders', '[]');
+        }
+    }
         let firebaseConfig;
         let appId;
 
@@ -1309,6 +1326,7 @@
     </script>
 </body>
 </html>
+
 
 
 
