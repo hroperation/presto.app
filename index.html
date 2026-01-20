@@ -847,20 +847,109 @@
             } catch (e) { console.error(e); alert("حدث خطأ أثناء التصدير: " + e.message); }
         };
 
+       // 2. استيراد البيانات (Smart Import)
         window.importData = async (input) => {
-            const file = input.files[0]; if (!file) return;
-            if(!confirm("تحذير: سيتم إضافة البيانات من الملف إلى النظام. هل أنت متأكد؟")) { input.value = ''; return; }
+            const file = input.files[0];
+            if (!file) return;
+
+            if(!confirm("سيتم استيراد البيانات ودمجها. هل أنت متأكد؟")) {
+                input.value = ''; 
+                return;
+            }
+
+            const showLoading = () => document.getElementById('loading-screen').style.display = 'flex';
+            const hideLoading = () => document.getElementById('loading-screen').style.display = 'none';
+
+            showLoading();
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    const data = JSON.parse(e.target.result); let count = 0;
-                    for (const [colName, items] of Object.entries(data)) { const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName); for (const item of items) { const { _id, ...docData } = item; docData.importedAt = serverTimestamp(); await addDoc(colRef, docData); count++; } }
-                    showToast(`تم استيراد ${count} سجل بنجاح!`); setTimeout(() => location.reload(), 2000);
-                } catch (err) { console.error(err); alert("الملف غير صالح"); }
-            };
-            reader.readAsText(file); input.value = '';
-        };
+                    const rawData = JSON.parse(e.target.result);
+                    let count = 0;
 
+                    // --- الحالة 1: الملف عبارة عن قائمة موظفين (الملف القديم) ---
+                    if (Array.isArray(rawData)) {
+                        const empColRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
+                        const leavesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
+
+                        for (const item of rawData) {
+                            // 1. تحويل بيانات الموظف من العربية إلى الإنجليزية
+                            const details = item.details || {};
+                            const newEmpData = {
+                                name: item.name || '',
+                                empId: item.id || '', // استخدام الـ ID القديم كرقم وظيفي
+                                dept: details['القسم'] || 'العمليات',
+                                role: details['المسمى'] || '',
+                                salary: details['الراتب'] || '0',
+                                phone: details['الهاتف'] || '',
+                                dob: details['تاريخ الميلاد'] || '',
+                                joining: details['بداية العمل'] || '',
+                                address: details['العنوان'] || '',
+                                bloodType: details['فصيلة الدم'] || '',
+                                email: '', // لا يوجد بريد في الملف القديم
+                                schedule: item.schedule || {},
+                                createdAt: serverTimestamp(),
+                                importedAt: serverTimestamp()
+                            };
+
+                            // إضافة الموظف للنظام الجديد
+                            const docRef = await addDoc(empColRef, newEmpData);
+                            const newEmpDocId = docRef.id; // نحتاج هذا المعرف لربط الإجازات
+                            count++;
+
+                            // 2. ترحيل الإجازات (Leaves) إن وجدت
+                            if (item.leaves && Array.isArray(item.leaves)) {
+                                for (const l of item.leaves) {
+                                    // حساب عدد الأيام تقريبياً
+                                    let daysCount = 1;
+                                    if(l.from && l.to && l.from !== l.to) {
+                                        const d1 = new Date(l.from);
+                                        const d2 = new Date(l.to);
+                                        const diff = Math.abs(d2 - d1);
+                                        daysCount = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+                                    }
+
+                                    await addDoc(leavesColRef, {
+                                        empDocId: newEmpDocId,
+                                        date: l.from, // نستخدم تاريخ البداية
+                                        type: l.type || 'سنوية',
+                                        daysCount: daysCount,
+                                        note: l.reason || 'مرحل من النظام القديم',
+                                        importedAt: serverTimestamp()
+                                    });
+                                }
+                            }
+                        }
+                        showToast(`تم تحويل واستيراد ${count} موظف بنجاح!`);
+                    } 
+                    
+                    // --- الحالة 2: الملف هو النسخة الاحتياطية للنظام الجديد (Backup) ---
+                    else {
+                        for (const [colName, items] of Object.entries(rawData)) {
+                            const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
+                            for (const item of items) {
+                                const { _id, ...docData } = item; 
+                                docData.importedAt = serverTimestamp();
+                                await addDoc(colRef, docData);
+                                count++;
+                            }
+                        }
+                        showToast(`تم استعادة ${count} سجل بنجاح!`);
+                    }
+
+                    setTimeout(() => location.reload(), 2000); 
+
+                } catch (err) {
+                    console.error(err);
+                    alert("حدث خطأ أثناء معالجة الملف: " + err.message);
+                } finally {
+                    hideLoading();
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; 
+        };
         // --- Overtime Page ---
         let currentOvertimeData = []; 
         window.previewOvertimeData = async () => {
@@ -896,5 +985,6 @@
     </script>
 </body>
 </html>
+
 
 
