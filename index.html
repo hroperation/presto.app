@@ -771,58 +771,158 @@
             return results.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
-        async function calculateMonthlyUnits(collectionName, empDocId) {
+      async function calculateMonthlyUnits(collectionName, empDocId) {
             const now = new Date();
             let start, end;
-            if (now.getDate() >= 21) { start = new Date(now.getFullYear(), now.getMonth(), 21); end = new Date(now.getFullYear(), now.getMonth() + 1, 20); } else { start = new Date(now.getFullYear(), now.getMonth() - 1, 21); end = new Date(now.getFullYear(), now.getMonth(), 20); }
+
+            // منطق تحديد الشهر المالي (من يوم 21 إلى يوم 20)
+            if (now.getDate() >= 21) {
+                // نحن في بداية دورة جديدة (مثلاً يوم 25، الدورة بدأت 21 وتنتهي 20 الشهر القادم)
+                start = new Date(now.getFullYear(), now.getMonth(), 21);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 20, 23, 59, 59);
+            } else {
+                // نحن في نهاية دورة (مثلاً يوم 5، الدورة بدأت 21 الشهر الماضي وتنتهي 20 الحالي)
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 21);
+                end = new Date(now.getFullYear(), now.getMonth(), 20, 23, 59, 59);
+            }
+
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
             const snap = await getDocs(query(colRef));
             let total = 0;
-            snap.forEach(d => { const data = d.data(); if (data.empDocId === empDocId && data.date) { const recordDate = new Date(data.date); if (recordDate >= start && recordDate <= end) total += parseFloat(data.hours || 0); } });
+
+            snap.forEach(d => {
+                const data = d.data();
+                // التأكد أن السجل للموظف وموجود تاريخ
+                if (data.empDocId === empDocId && data.date) {
+                    const recordDate = new Date(data.date);
+                    // هل تاريخ السجل يقع ضمن الفترة المحددة؟
+                    if (recordDate >= start && recordDate <= end) {
+                        total += parseFloat(data.hours || 0);
+                    }
+                }
+            });
             return total;
         }
 
         // --- Modals & Data Actions ---
-        
         window.openActionModal = async (type, empDocId, currentBalance = 0) => {
             const modal = document.getElementById('actionModal');
             const title = document.getElementById('action-modal-title');
             const body = document.getElementById('action-modal-body');
             const saveBtn = document.getElementById('btn-action-save');
-            modal.style.display = 'flex'; body.innerHTML = "";
             
+            modal.style.display = 'flex';
+            body.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>'; // تحميل
+
             if (type === 'leave') {
                 title.innerText = "طلب إجازة جديدة";
-                body.innerHTML = `<div class="form-group"><label>نوع الإجازة</label><select id="act-leave-type"><option value="سنوية">سنوية (تخصم من الرصيد)</option><option value="طارئة">طارئة (تخصم من الرصيد)</option><option value="مرضية">مرضية (لا تخصم)</option></select></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div><div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>`;
+                body.innerHTML = `
+                    <div class="form-group">
+                        <label>نوع الإجازة</label>
+                        <select id="act-leave-type">
+                            <option value="سنوية">سنوية (تخصم من الرصيد)</option>
+                            <option value="طارئة">طارئة (تخصم من الرصيد)</option>
+                            <option value="مرضية">مرضية (لا تخصم)</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
+                    <div class="form-group"><label>عدد الأيام</label><input type="number" id="act-days-count" value="1" min="1"></div>
+                    <div class="form-group"><label>التفاصيل</label><textarea id="act-note" rows="3" placeholder="أدخل تفاصيل الإجازة..."></textarea></div>
+                `;
                 saveBtn.onclick = () => {
                     const lType = document.getElementById('act-leave-type').value;
                     const lDays = parseFloat(document.getElementById('act-days-count').value);
                     const lDate = document.getElementById('act-date').value;
-                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) { alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`); return; }
+
+                    if ((lType === 'سنوية' || lType === 'طارئة') && lDays > currentBalance) {
+                        alert(`عذراً، الرصيد غير كافٍ. المتاح: ${currentBalance} يوم`);
+                        return;
+                    }
                     if (!lDate) return alert("يرجى تحديد التاريخ");
-                    saveAction('leaves', empDocId, { type: lType, date: lDate, daysCount: lDays, note: document.getElementById('act-note').value });
+
+                    saveAction('leaves', empDocId, { 
+                        type: lType,
+                        date: lDate,
+                        daysCount: lDays,
+                        note: document.getElementById('act-note').value
+                    });
                 };
             } 
             else if (type === 'permission') {
                 title.innerText = "طلب إذن خروج";
+                // حساب الرصيد المستهلك هذا الشهر (دورة 21-20)
                 const usedPerms = await calculateMonthlyUnits('permissions', empDocId);
-                body.innerHTML = `<div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">رصيد الشهر الحالي: <span style="font-weight:700">${usedPerms} / 5 ساعات</span></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" max="5" placeholder="مثال: 2"></div>`;
+                
+                body.innerHTML = `
+                    <div style="background:var(--bg-main); padding:15px; border-radius:12px; margin-bottom:15px; font-size:13px; border:1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>المستهلك هذا الشهر (من يوم 21):</span>
+                            <span style="font-weight:bold; color:var(--primary);">${usedPerms} ساعات</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>الحد الأقصى المسموح:</span>
+                            <span style="font-weight:bold;">5 ساعات</span>
+                        </div>
+                        <div style="margin-top:8px; height:6px; background:#e0e0e0; border-radius:3px; overflow:hidden;">
+                            <div style="width:${(usedPerms/5)*100}%; height:100%; background:var(--primary);"></div>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
+                    <div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" max="5" placeholder="مثال: 2"></div>
+                `;
                 saveBtn.onclick = () => {
                     const hrs = parseFloat(document.getElementById('act-hours').value);
-                    if (usedPerms + hrs > 5) return alert("عذراً، الرصيد المتبقي لا يكفي");
+                    if (!hrs || hrs <= 0) return alert("أدخل عدد ساعات صحيح");
+                    
+                    // التحقق من الحد المسموح (5 ساعات)
+                    if (usedPerms + hrs > 5) {
+                        return alert(`عذراً، لا يمكن تجاوز 5 ساعات شهرياً.\nالمستخدم: ${usedPerms} ساعة\nالمتبقي: ${5 - usedPerms} ساعة`);
+                    }
+                    
                     saveAction('permissions', empDocId, { date: document.getElementById('act-date').value, hours: hrs });
                 };
             }
             else if (type === 'overtime') {
                 title.innerText = "تسجيل عمل إضافي";
+                // حساب الرصيد المستهلك هذا الشهر (دورة 21-20)
                 const usedOvertime = await calculateMonthlyUnits('overtime', empDocId);
-                body.innerHTML = `<div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:15px; font-size:12px;">رصيد الشهر الحالي: <span style="font-weight:700">${usedOvertime} / 20 ساعة</span></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div><div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" placeholder="مثال: 4"></div><div class="form-group"><label>السبب</label><select id="act-reason"><option>نقص إذن</option><option>نقص إجازة</option><option>ضغط عمل</option><option>أحوال جوية</option></select></div>`;
+                
+                body.innerHTML = `
+                    <div style="background:var(--bg-main); padding:15px; border-radius:12px; margin-bottom:15px; font-size:13px; border:1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>المسجل هذا الشهر (من يوم 21):</span>
+                            <span style="font-weight:bold; color:var(--success);">${usedOvertime} ساعة</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>الحد الأقصى المسموح:</span>
+                            <span style="font-weight:bold;">20 ساعة</span>
+                        </div>
+                        <div style="margin-top:8px; height:6px; background:#e0e0e0; border-radius:3px; overflow:hidden;">
+                            <div style="width:${Math.min((usedOvertime/20)*100, 100)}%; height:100%; background:var(--success);"></div>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>
+                    <div class="form-group"><label>عدد الساعات</label><input type="number" id="act-hours" placeholder="مثال: 4"></div>
+                    <div class="form-group">
+                        <label>السبب</label>
+                        <select id="act-reason">
+                            <option>نقص إذن</option><option>نقص إجازة</option><option>ضغط عمل</option><option>أحوال جوية</option>
+                        </select>
+                    </div>
+                `;
                 saveBtn.onclick = () => {
                     const hrs = parseFloat(document.getElementById('act-hours').value);
-                    if (usedOvertime + hrs > 20) return alert("عذراً، رصيد الإضافي المتبقي لا يكفي");
+                    if (!hrs || hrs <= 0) return alert("أدخل عدد ساعات صحيح");
+
+                    // التحقق من الحد المسموح (20 ساعة)
+                    if (usedOvertime + hrs > 20) {
+                        return alert(`عذراً، تجاوزت الحد الأقصى للإضافي (20 ساعة).\nالمسجل: ${usedOvertime} ساعة\nالمتبقي: ${20 - usedOvertime} ساعة`);
+                    }
+
                     saveAction('overtime', empDocId, { date: document.getElementById('act-date').value, hours: hrs, reason: document.getElementById('act-reason').value });
                 };
             }
+            // ... (باقي الأنواع task و warning تبقى كما هي) ...
             else if (type === 'task') {
                 title.innerText = "إسناد مهمة عمل";
                 body.innerHTML = `<div class="form-group"><label>نوع المهمة</label><select id="act-task-type"><option>العمليات</option><option>مكالمات</option><option>رسائل البريستومان</option><option>اكتيف</option></select></div><div class="form-group"><label>التاريخ</label><input type="date" id="act-date"></div>`;
@@ -968,4 +1068,5 @@
     </script>
 </body>
 </html>
+
 
