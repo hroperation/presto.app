@@ -1204,9 +1204,112 @@
             };
             reader.readAsText(file); input.value = ''; 
         };
+        // --- متغير لتخزين بيانات البحث الحالية ---
+        let currentOvertimeData = []; 
+
+        // --- 1. دالة البحث وعرض البيانات ---
+        window.previewOvertimeData = async () => {
+            const dateFrom = document.getElementById('overtime-from').value;
+            const dateTo = document.getElementById('overtime-to').value;
+            const tbody = document.getElementById('overtime-report-body');
+            const totalEl = document.getElementById('total-month-hours');
+            
+            if (!dateFrom || !dateTo) {
+                alert("يرجى اختيار التاريخ (من - إلى) أولاً.");
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner" style="width:30px;height:30px;border-width:3px;margin:20px auto;"></div></td></tr>';
+            
+            currentOvertimeData = []; 
+            let totalHours = 0;
+            
+            try {
+                // جلب البيانات من قاعدة البيانات
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'overtime');
+                const snap = await getDocs(query(colRef));
+                
+                snap.forEach(doc => { 
+                    const data = doc.data(); 
+                    // فلترة حسب التاريخ
+                    if (data.date >= dateFrom && data.date <= dateTo) { 
+                        const emp = allEmployees.find(e => e.id === data.empDocId); 
+                        const hrs = parseFloat(data.hours || 0);
+                        
+                        currentOvertimeData.push({ 
+                            date: data.date, 
+                            empName: emp ? emp.name : 'موظف محذوف', 
+                            dept: emp ? emp.dept : '-', 
+                            hours: hrs, 
+                            reason: data.reason || '-' 
+                        }); 
+                        totalHours += hrs; 
+                    } 
+                });
+                
+                // ترتيب النتائج حسب التاريخ
+                currentOvertimeData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                tbody.innerHTML = "";
+                
+                // عرض النتائج في الجدول
+                if (currentOvertimeData.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">لا توجد سجلات في هذه الفترة</td></tr>'; 
+                } else { 
+                    currentOvertimeData.forEach(item => { 
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${item.date}</td>
+                                <td style="font-weight:bold;">${item.empName}</td>
+                                <td>${item.dept}</td>
+                                <td style="color:var(--success); font-weight:bold;">${item.hours}</td>
+                                <td>${item.reason}</td>
+                            </tr>`; 
+                    }); 
+                }
+                
+                // تحديث إجمالي الساعات
+                if(totalEl) totalEl.innerText = totalHours;
+
+            } catch (e) { 
+                console.error(e); 
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">حدث خطأ في جلب البيانات</td></tr>'; 
+            }
+        };
+
+        // --- 2. دالة تحميل الإكسل ---
+        window.downloadOvertimeCSV = () => {
+            if (currentOvertimeData.length === 0) { 
+                alert("لا توجد بيانات ظاهرة لتحميلها. قم بالبحث أولاً."); 
+                return; 
+            }
+
+            // إنشاء محتوى ملف CSV مع دعم اللغة العربية (BOM)
+            let csvContent = "\uFEFF"; 
+            csvContent += "التاريخ,اسم الموظف,القسم,عدد الساعات,سبب العمل الإضافي\n";
+
+            currentOvertimeData.forEach(row => { 
+                const cleanReason = (row.reason || "").replace(/,/g, " "); // إزالة الفواصل من النص لتجنب تكسر الملف
+                csvContent += `${row.date},${row.empName},${row.dept},${row.hours},${cleanReason}\n`; 
+            });
+
+            // عملية التنزيل
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
+            const url = URL.createObjectURL(blob); 
+            const link = document.createElement("a"); 
+            link.setAttribute("href", url);
+            
+            const fromDate = document.getElementById('overtime-from').value; 
+            const toDate = document.getElementById('overtime-to').value; 
+            link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`); 
+            
+            document.body.appendChild(link); 
+            link.click(); 
+            document.body.removeChild(link);
+        };
     </script>
 </body>
 </html>
+
 
 
 
