@@ -440,6 +440,32 @@
                 }
             });
         }
+        function updateReminderWidget() {
+    // 1. تحديد العنصر
+    const reminderBox = document.querySelector('#side-widgets .card:last-child');
+    const title = reminderBox.querySelector('h4');
+    const text = reminderBox.querySelector('p');
+    
+    const today = new Date().getDate(); // رقم اليوم في الشهر (1-31)
+
+    // 2. تغيير النص حسب التاريخ
+    if (today >= 25) {
+        reminderBox.style.background = "#e74c3c"; // لون أحمر للتنبيه
+        title.innerHTML = '<i class="fas fa-money-bill-wave"></i> تنبيه الرواتب';
+        text.innerHTML = `نحن في يوم ${today}.<br>يرجى البدء في إعداد مسيرات الرواتب لهذا الشهر.`;
+    } 
+    else if (today >= 1 && today <= 5) {
+        reminderBox.style.background = "#f1c40f"; // لون أصفر
+        title.innerHTML = '<i class="fas fa-file-alt"></i> تقارير الشهر';
+        text.innerHTML = "يرجى مراجعة تقارير الحضور والغياب للشهر الماضي وإغلاقها.";
+    } 
+    else {
+        // الوضع العادي
+        reminderBox.style.background = "var(--secondary)";
+        title.innerHTML = 'تذكير';
+        text.innerHTML = "لا توجد مهام عاجلة حالياً.<br>تحديث السياسات بنهاية الشهر.";
+    }
+}
 
         function updateUI() {
             const tableBody = document.getElementById('employeesTableBody');
@@ -464,6 +490,7 @@
             });
             updateDashboardStats();
             updateBirthdayList();
+            updateReminderWidget()
         }
 
         async function updateDashboardStats() {
@@ -800,6 +827,7 @@
     </script>
 </body>
 </html>
+
 
 
 
