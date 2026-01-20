@@ -284,10 +284,19 @@
                             <p style="font-size: 13px; color: var(--text-muted);">لا يوجد أعياد ميلاد اليوم</p>
                         </div>
                     </div>
-                    <div class="card" style="background: var(--secondary); color: white;">
-                        <h4 style="margin-top:0; color: var(--primary-light);">تذكير</h4>
-                        <p style="font-size: 13px; opacity: 0.8;">تحديث السياسات بنهاية الشهر.</p>
+                   <div class="card" style="background: var(--secondary); color: white; min-height: 180px; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        <h4 style="margin: 0; color: var(--primary-light); display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-bell"></i> تذكيرات
+                        </h4>
+                        <button onclick="addReminder()" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 16px; transition: 0.2s;" title="إضافة تذكير">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
                     </div>
+                    
+                    <div id="reminder-list" style="flex: 1; overflow-y: auto; max-height: 150px; padding-left: 5px;">
+                        </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -824,9 +833,60 @@
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url);
             const fromDate = document.getElementById('overtime-from').value; const toDate = document.getElementById('overtime-to').value; link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
+        // --- دوال نظام التذكيرات (Reminders) ---
+
+        // 1. جلب التذكيرات عند تشغيل النظام
+        function loadReminders() {
+            const listEl = document.getElementById('reminder-list');
+            if (!listEl) return;
+
+            // جلب البيانات من ذاكرة المتصفح
+            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+
+            if (reminders.length === 0) {
+                listEl.innerHTML = '<p style="font-size: 12px; opacity: 0.6; text-align: center; margin-top: 20px;">لا توجد تذكيرات حالياً</p>';
+                return;
+            }
+
+            let html = '';
+            reminders.forEach((text, index) => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+                        <span style="font-size: 12px; line-height: 1.4; width: 85%; word-wrap: break-word;">${text}</span>
+                        <button onclick="deleteReminder(${index})" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 12px; padding: 0 5px;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        // 2. إضافة تذكير جديد
+        window.addReminder = () => {
+            const text = prompt("اكتب الملاحظة أو التذكير الجديد:");
+            if (text && text.trim() !== "") {
+                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+                reminders.push(text.trim());
+                localStorage.setItem('my_reminders', JSON.stringify(reminders));
+                loadReminders(); // تحديث القائمة
+                showToast("تمت الإضافة");
+            }
+        };
+
+        // 3. حذف تذكير
+        window.deleteReminder = (index) => {
+            if (confirm("هل تريد حذف هذا التذكير؟")) {
+                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+                reminders.splice(index, 1); // حذف العنصر
+                localStorage.setItem('my_reminders', JSON.stringify(reminders));
+                loadReminders(); // تحديث القائمة
+            }
+        };
     </script>
 </body>
 </html>
+
 
 
 
