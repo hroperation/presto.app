@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/presto.app/">
     
-    <title>Presto11 HR | النظام الشامل</title>
+    <title>Presto OP</title>
     
     <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -415,37 +415,25 @@
 
   <div id="reminderModal" class="modal-overlay">
         <div class="modal-content" style="max-width: 450px;">
-            <h3 style="margin-bottom: 20px;"><i class="fas fa-bell" style="color: var(--primary);"></i> إضافة تذكير جديد</h3>
+            <h3 style="margin-bottom: 20px;">
+                <i class="fas fa-bell" style="color: var(--primary);"></i> إضافة تذكير جديد
+            </h3>
+            
             <div class="form-group">
                 <label>نص المهمة أو التذكير</label>
                 <textarea id="new-reminder-text" rows="3" placeholder="مثال: مراجعة تقارير شهر يناير..."></textarea>
             </div>
+
             <div style="display: flex; gap: 15px; margin-top: 25px;">
-                <button onclick="saveNewReminder()" class="btn-main" style="flex: 1; justify-content: center;">حفظ التذكير</button>
-                <button onclick="closeReminderModal()" style="flex: 1; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700; color: var(--text-muted);">إلغاء</button>
+                <button onclick="saveNewReminder()" class="btn-main" style="flex: 1; justify-content: center;">
+                    حفظ التذكير
+                </button>
+                <button onclick="closeReminderModal()" style="flex: 1; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700; color: var(--text-muted);">
+                    إلغاء
+                </button>
             </div>
         </div>
     </div>
-                // --- استبدل دوال التذكير القديمة بهذا الكود ---
-
-    
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.1); padding:10px; border-radius:12px;">
-                            <span style="font-size:12px;">${t}</span>
-                            <button onclick="deleteReminder(${i})" style="border:none; background:none; color:#ff6b6b; cursor:pointer;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    `).join('');
-                }
-            } catch (e) {
-                console.error("Error loading reminders", e);
-                localStorage.setItem('my_reminders', '[]'); // إعادة ضبط في حال الخطأ
-            }
-        }
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
@@ -1331,6 +1319,7 @@
     </script>
 </body>
 </html>
+
 
 
 
