@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/presto.app/">
-    
-    <title>Presto OP</title>
+    <title>Presto HR | النظام الإداري</title>
     
     <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -28,7 +27,6 @@
             --success: #2ecc71;
             --info: #3498db;
             --warning: #f1c40f;
-            --purple: #9b59b6;
             --danger: #e74c3c;
         }
 
@@ -44,15 +42,16 @@
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'El Messiri', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- Login Styles --- */
+        /* --- شاشة تسجيل الدخول --- */
         #login-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 5000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-card { background: var(--bg-card); padding: 40px; border-radius: 30px; box-shadow: var(--shadow-md); width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--border-color); }
         .login-logo { width: 150px; margin-bottom: 20px; }
         .login-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 15px; border: 1px solid var(--border-color); font-family: 'El Messiri'; background: var(--bg-main); color: var(--text-main); outline: none; }
         .login-input:focus { border-color: var(--primary); }
         .login-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; font-size: 16px; }
-        
-        /* --- Sidebar & Layout --- */
+        .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        /* --- التخطيط العام --- */
         .sidebar { width: 85px; background: var(--sidebar-bg); margin: 15px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; padding: 30px 0; box-shadow: var(--shadow-md); z-index: 1000; }
         .sidebar:hover { width: 260px; align-items: stretch; padding: 30px 20px; }
         .sidebar-logo { height: 40px; margin-bottom: 50px; object-fit: contain; padding: 0 10px; }
@@ -68,7 +67,7 @@
         .content-area { flex: 1; padding: 30px 40px; display: grid; grid-template-columns: 1fr 340px; gap: 30px; overflow-y: auto; }
         .content-area.full-width { grid-template-columns: 1fr; }
 
-        /* --- Components --- */
+        /* --- المكونات --- */
         .card { background: var(--bg-card); border-radius: 28px; padding: 30px; box-shadow: var(--shadow-sm); margin-bottom: 25px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
         .card h3 { margin-top: 0; font-weight: 700; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
         
@@ -87,7 +86,7 @@
 
         .emp-tag { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 5px 10px; border-radius: 10px; display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; box-shadow: 0 3px 6px rgba(255,107,74,0.2); animation: fadeIn 0.3s ease; }
 
-        /* --- Profile Header Compact Style --- */
+        /* --- بروفايل الموظف (تصميم مصغر) --- */
         .profile-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 30px; background: var(--bg-card); padding: 15px 20px; border-radius: 20px; border: 1px solid var(--border-color); }
         .profile-right-part { display: flex; align-items: center; gap: 15px; }
         .profile-left-actions { display: flex; align-items: center; gap: 12px; }
@@ -111,6 +110,7 @@
         .action-card-btn i { font-size: 24px; color: var(--primary); }
         .action-card-btn span { font-weight: 700; font-size: 13px; }
 
+        /* --- النوافذ المنبثقة والتحميل --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); display: none; justify-content: center; align-items: center; z-index: 6000; backdrop-filter: blur(10px); }
         .modal-content { background: var(--bg-card); width: 95%; max-width: 850px; border-radius: 35px; padding: 40px; position: relative; max-height: 90vh; overflow-y: auto; }
         
@@ -129,162 +129,39 @@
         .form-group label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
         input, select, textarea { padding: 14px; border-radius: 15px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-family: 'El Messiri'; outline: none; }
         input:focus, textarea:focus { border-color: var(--primary); background: var(--bg-card); }
-        
         .back-btn { background: var(--bg-main); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
         .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
         .badge-success { background: #d4edda; color: #155724; }
 
-        /* --- تحسينات الجوال (Mobile Responsiveness) --- */
+        /* --- تحسينات الجوال (Mobile) --- */
         @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-
-            /* تحويل القائمة الجانبية إلى شريط سفلي */
-            .sidebar {
-                width: 100%;
-                height: 70px;
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                margin: 0;
-                border-radius: 20px 20px 0 0;
-                flex-direction: row;
-                justify-content: space-around;
-                padding: 0;
-                z-index: 2000;
-                background: var(--bg-card);
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .sidebar:hover {
-                width: 100%;
-                padding: 0;
-            }
-
-            .sidebar-logo {
-                display: none; /* إخفاء الشعار في الشريط السفلي */
-            }
-
-            .nav-menu {
-                display: flex;
-                width: auto;
-                gap: 10px;
-            }
-
-            .nav-link {
-                flex-direction: column;
-                padding: 10px;
-                margin: 0;
-                border-radius: 12px;
-                font-size: 10px;
-            }
-
-            .nav-link i {
-                font-size: 20px;
-                margin-bottom: 2px;
-            }
-
-            .nav-link span {
-                display: block;
-                opacity: 1;
-                font-size: 9px;
-                margin: 0;
-            }
-
-            /* إخفاء أزرار الاستيراد والتصدير في الجوال لتوفير المساحة (أو نقلها لقائمة جانبية) */
-            .sidebar > div:last-child {
-                display: none; 
-            }
-
-            /* تعديل مساحة العمل */
-            .workspace {
-                margin-bottom: 80px; /* مساحة للشريط السفلي */
-            }
-
-            .content-area {
-                padding: 15px;
-                grid-template-columns: 1fr; /* عمود واحد */
-                gap: 20px;
-            }
-
-            .top-bar {
-                padding: 0 15px;
-                height: 70px;
-            }
-
-            /* ترتيب الإحصائيات 2x2 */
-            .stats-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-
-            .stat-box {
-                padding: 15px;
-            }
-            
-            .stat-box h4 {
-                font-size: 11px;
-            }
-            
-            .stat-box .val {
-                font-size: 24px;
-            }
-
-            /* الجداول */
-            .card {
-                padding: 15px;
-                border-radius: 20px;
-            }
-            
-            /* الهيدر في البروفايل */
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .profile-right-part {
-                flex-direction: column;
-            }
-            
-            .profile-left-actions {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .profile-info-grid {
-                grid-template-columns: 1fr; /* المعلومات تحت بعضها */
-            }
-
-            .profile-tabs-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .sub-card {
-                grid-column: 1 / -1 !important;
-            }
-
-            /* النوافذ المنبثقة */
-            .modal-content {
-                width: 95%;
-                padding: 20px;
-                max-height: 85vh;
-            }
-
-            #schedule-inputs {
-                grid-template-columns: 1fr 1fr; /* يومين في كل صف */
-            }
-            
-            /* زر الخروج واسم المستخدم */
-            .top-bar h2 {
-                font-size: 18px;
-            }
-            
-            /* صفحة الإضافي */
-            #view-overtime .form-group {
-                min-width: 100%; /* الحقول تأخذ العرض كامل */
-            }
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: 70px; position: fixed; bottom: 0; left: 0; margin: 0; border-radius: 20px 20px 0 0; flex-direction: row; justify-content: space-around; padding: 0; z-index: 2000; background: var(--bg-card); border-top: 1px solid var(--border-color); }
+            .sidebar:hover { width: 100%; padding: 0; }
+            .sidebar-logo { display: none; }
+            .nav-menu { display: flex; width: auto; gap: 10px; }
+            .nav-link { flex-direction: column; padding: 10px; margin: 0; border-radius: 12px; font-size: 10px; }
+            .nav-link i { font-size: 20px; margin-bottom: 2px; }
+            .nav-link span { display: block; opacity: 1; font-size: 9px; margin: 0; }
+            .sidebar > div:last-child { display: none; }
+            .workspace { margin-bottom: 80px; }
+            .content-area { padding: 15px; grid-template-columns: 1fr; gap: 20px; }
+            .top-bar { padding: 0 15px; height: 70px; }
+            .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-box { padding: 15px; }
+            .stat-box h4 { font-size: 11px; }
+            .stat-box .val { font-size: 24px; }
+            .card { padding: 15px; border-radius: 20px; }
+            .profile-header { flex-direction: column; text-align: center; gap: 15px; }
+            .profile-right-part { flex-direction: column; }
+            .profile-left-actions { width: 100%; justify-content: center; }
+            .profile-info-grid { grid-template-columns: 1fr; }
+            .profile-tabs-content { grid-template-columns: 1fr; }
+            .sub-card { grid-column: 1 / -1 !important; }
+            .modal-content { width: 95%; padding: 20px; max-height: 85vh; }
+            #schedule-inputs { grid-template-columns: 1fr 1fr; }
+            .top-bar h2 { font-size: 18px; }
+            #view-overtime .form-group { min-width: 100%; }
         }
     </style>
 </head>
@@ -334,7 +211,7 @@
 
         <div class="workspace">
             <header class="top-bar">
-                <h2 id="page-title" style="margin: 0; font-weight: 800;">مرحبا</h2>
+                <h2 id="page-title" style="margin: 0; font-weight: 800;">لوحة التحكم</h2>
                 <div style="display: flex; gap: 25px; align-items: center;">
                     <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; color: var(--text-muted); font-size: 18px;"><i class="fas fa-moon"></i></button>
                     <button onclick="logoutUser()" style="background: #fee7e7; border: none; cursor: pointer; color: #e74c3c; padding: 8px 15px; border-radius: 12px; font-weight: 700; font-family: inherit; font-size: 12px; display: flex; align-items: center; gap: 5px;">
@@ -431,50 +308,29 @@
                 </div>
 
                 <div id="side-widgets" class="side-widgets">
+                    <div class="card" style="background: var(--secondary); color: white; min-height: 180px; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                            <h4 style="margin: 0; color: var(--primary-light); display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-bell"></i> تذكيرات
+                            </h4>
+                            <button onclick="addReminder()" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 16px; transition: 0.2s;" title="إضافة تذكير">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                        </div>
+                        <div id="reminder-list" style="flex: 1; overflow-y: auto; max-height: 150px; padding-left: 5px;"></div>
+                    </div>
+
                     <div class="card">
                         <h4><i class="fas fa-birthday-cake" style="color: var(--primary);"></i> أعياد الميلاد</h4>
                         <div id="birthday-list">
                             <p style="font-size: 13px; color: var(--text-muted);">لا يوجد أعياد ميلاد اليوم</p>
                         </div>
                     </div>
-                   <div class="card" style="background: var(--secondary); color: white; min-height: 180px; display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                        <h4 style="margin: 0; color: var(--primary-light); display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-bell"></i> تذكيرات
-                        </h4>
-                        <button onclick="addReminder()" style="background: none; border: none; color: var(--success); cursor: pointer; font-size: 16px; transition: 0.2s;" title="إضافة تذكير">
-                            <i class="fas fa-plus-circle"></i>
-                        </button>
-                    </div>
-                    
-                    <div id="reminder-list" style="flex: 1; overflow-y: auto; max-height: 150px; padding-left: 5px;">
-                        </div>
-                </div>
                 </div>
             </div>
         </div>
     </div>
-<div id="reminderModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 450px;">
-            <h3 style="margin-bottom: 20px;">
-                <i class="fas fa-bell" style="color: var(--primary);"></i> إضافة تذكير جديد
-            </h3>
-            
-            <div class="form-group">
-                <label>نص المهمة أو التذكير</label>
-                <textarea id="new-reminder-text" rows="3" placeholder="مثال: مراجعة تقارير شهر يناير..."></textarea>
-            </div>
 
-            <div style="display: flex; gap: 15px; margin-top: 25px;">
-                <button onclick="saveNewReminder()" class="btn-main" style="flex: 1; justify-content: center;">
-                    حفظ التذكير
-                </button>
-                <button onclick="closeReminderModal()" style="flex: 1; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700; color: var(--text-muted);">
-                    إلغاء
-                </button>
-            </div>
-        </div>
-    </div>
     <div id="employeeModal" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-title" style="margin-bottom: 25px;"><i class="fas fa-user-plus" style="color: var(--primary);"></i> بيانات الموظف</h3>
@@ -508,6 +364,20 @@
             <div style="display: flex; gap: 15px; margin-top: 25px;">
                 <button id="btn-action-save" class="btn-main" style="flex: 1; justify-content:center;">تأكيد الطلب</button>
                 <button onclick="closeActionModal()" style="padding: 14px; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700;">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reminderModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-bell" style="color: var(--primary);"></i> إضافة تذكير جديد</h3>
+            <div class="form-group">
+                <label>نص المهمة أو التذكير</label>
+                <textarea id="new-reminder-text" rows="3" placeholder="مثال: مراجعة تقارير شهر يناير..."></textarea>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button onclick="saveNewReminder()" class="btn-main" style="flex: 1; justify-content: center;">حفظ التذكير</button>
+                <button onclick="closeReminderModal()" style="flex: 1; border: none; background: var(--bg-main); cursor: pointer; border-radius: 18px; font-weight: 700; color: var(--text-muted);">إلغاء</button>
             </div>
         </div>
     </div>
@@ -622,33 +492,45 @@
                 }
             });
         }
-        function updateReminderWidget() {
-    // 1. تحديد العنصر
-    const reminderBox = document.querySelector('#side-widgets .card:last-child');
-    const title = reminderBox.querySelector('h4');
-    const text = reminderBox.querySelector('p');
-    
-    const today = new Date().getDate(); // رقم اليوم في الشهر (1-31)
 
-    // 2. تغيير النص حسب التاريخ
-    if (today >= 25) {
-        reminderBox.style.background = "#e74c3c"; // لون أحمر للتنبيه
-        title.innerHTML = '<i class="fas fa-money-bill-wave"></i> تنبيه الرواتب';
-        text.innerHTML = `نحن في يوم ${today}.<br>يرجى البدء في إعداد مسيرات الرواتب لهذا الشهر.`;
-    } 
-    else if (today >= 1 && today <= 5) {
-        reminderBox.style.background = "#f1c40f"; // لون أصفر
-        title.innerHTML = '<i class="fas fa-file-alt"></i> تقارير الشهر';
-        text.innerHTML = "يرجى مراجعة تقارير الحضور والغياب للشهر الماضي وإغلاقها.";
-    } 
-    else {
-        // الوضع العادي
-        reminderBox.style.background = "var(--secondary)";
-        title.innerHTML = 'تذكير';
-        text.innerHTML = "لا توجد مهام عاجلة حالياً.<br>تحديث السياسات بنهاية الشهر.";
-    }
-}
+        // --- Reminders ---
+        window.addReminder = () => {
+            const modal = document.getElementById('reminderModal');
+            const input = document.getElementById('new-reminder-text');
+            input.value = ""; modal.style.display = 'flex'; setTimeout(() => input.focus(), 100);
+        };
+        window.closeReminderModal = () => { document.getElementById('reminderModal').style.display = 'none'; };
+        window.saveNewReminder = () => {
+            const input = document.getElementById('new-reminder-text');
+            const text = input.value;
+            if (text && text.trim() !== "") {
+                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+                reminders.push(text.trim());
+                localStorage.setItem('my_reminders', JSON.stringify(reminders));
+                loadReminders(); closeReminderModal(); showToast("تم إضافة التذكير");
+            } else { alert("يرجى كتابة نص التذكير"); }
+        };
+        function loadReminders() {
+            const listEl = document.getElementById('reminder-list');
+            if (!listEl) return;
+            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+            if (reminders.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;"><i class="far fa-sticky-note" style="font-size:20px; margin-bottom:5px;"></i><p style="font-size:11px; margin:0;">لا توجد تذكيرات</p></div>'; return; }
+            let html = '';
+            reminders.forEach((text, index) => {
+                html += `<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"><span style="font-size: 13px; line-height: 1.4; width: 85%; word-wrap: break-word;">${text}</span><button onclick="deleteReminder(${index})" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 14px; padding: 0 5px; opacity: 0.8; transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8"><i class="fas fa-trash-alt"></i></button></div>`;
+            });
+            listEl.innerHTML = html;
+        }
+        window.deleteReminder = (index) => {
+            if (confirm("حذف هذا التذكير؟")) {
+                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
+                reminders.splice(index, 1);
+                localStorage.setItem('my_reminders', JSON.stringify(reminders));
+                loadReminders();
+            }
+        };
 
+        // --- Core UI Updates ---
         function updateUI() {
             const tableBody = document.getElementById('employeesTableBody');
             const countEl = document.getElementById('count-home');
@@ -672,7 +554,7 @@
             });
             updateDashboardStats();
             updateBirthdayList();
-            updateReminderWidget()
+            loadReminders();
         }
 
         async function updateDashboardStats() {
@@ -743,7 +625,7 @@
             }
         }
 
-        // --- Core Helpers ---
+        // --- Helpers ---
         function calculateBalance(joiningDate, takenDays) {
             if (!joiningDate) return 0;
             const start = new Date(joiningDate);
@@ -765,7 +647,7 @@
         async function calculateMonthlyUnits(collectionName, empDocId) {
             const now = new Date();
             let start, end;
-            // دورة الرواتب: من يوم 21 الشهر السابق إلى 20 الشهر الحالي
+            // دورة 21 إلى 20
             if (now.getDate() >= 21) {
                 start = new Date(now.getFullYear(), now.getMonth(), 21);
                 end = new Date(now.getFullYear(), now.getMonth() + 1, 20, 23, 59, 59);
@@ -786,7 +668,7 @@
             return total;
         }
 
-        // --- Profile View (Compact Header) ---
+        // --- Profile View ---
         window.viewProfile = async (id) => {
             const emp = allEmployees.find(e => e.id === id);
             if (!emp) return;
@@ -951,7 +833,7 @@
         window.toggleTheme = () => { const current = document.body.getAttribute('data-theme'); document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark'); };
         function showToast(msg) { const t = document.getElementById('toast'); if (t) { t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); } }
 
-        // --- Export/Import & Reports ---
+        // --- Export/Import ---
         window.exportData = async () => {
             if(!confirm("هل تريد تحميل نسخة احتياطية؟")) return;
             showToast("جاري تحضير البيانات...");
@@ -978,6 +860,7 @@
             reader.readAsText(file); input.value = '';
         };
 
+        // --- Overtime Page ---
         let currentOvertimeData = []; 
         window.previewOvertimeData = async () => {
             const dateFrom = document.getElementById('overtime-from').value;
@@ -1006,110 +889,9 @@
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url);
             const fromDate = document.getElementById('overtime-from').value; const toDate = document.getElementById('overtime-to').value; link.setAttribute("download", `تقرير_اضافي_من_${fromDate}_الى_${toDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
-        // --- دوال نظام التذكيرات (Reminders) ---
-
-        // 1. جلب التذكيرات عند تشغيل النظام
-        function loadReminders() {
-            const listEl = document.getElementById('reminder-list');
-            if (!listEl) return;
-
-            // جلب البيانات من ذاكرة المتصفح
-            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-
-            if (reminders.length === 0) {
-                listEl.innerHTML = '<p style="font-size: 12px; opacity: 0.6; text-align: center; margin-top: 20px;">لا توجد تذكيرات حالياً</p>';
-                return;
-            }
-
-            let html = '';
-            reminders.forEach((text, index) => {
-                html += `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
-                        <span style="font-size: 12px; line-height: 1.4; width: 85%; word-wrap: break-word;">${text}</span>
-                        <button onclick="deleteReminder(${index})" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 12px; padding: 0 5px;">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            listEl.innerHTML = html;
-        }
-
-      // --- دوال نظام التذكيرات (محدثة بالتصميم الجديد) ---
-
-        // 1. فتح نافذة الإضافة
-        window.addReminder = () => {
-            const modal = document.getElementById('reminderModal');
-            const input = document.getElementById('new-reminder-text');
-            input.value = ""; // تفريغ الحقل
-            modal.style.display = 'flex';
-            setTimeout(() => input.focus(), 100); // التركيز على الكتابة تلقائياً
-        };
-
-        // 2. إغلاق النافذة
-        window.closeReminderModal = () => {
-            document.getElementById('reminderModal').style.display = 'none';
-        };
-
-        // 3. حفظ التذكير (عند ضغط زر الحفظ)
-        window.saveNewReminder = () => {
-            const input = document.getElementById('new-reminder-text');
-            const text = input.value;
-
-            if (text && text.trim() !== "") {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                reminders.push(text.trim());
-                localStorage.setItem('my_reminders', JSON.stringify(reminders));
-                
-                loadReminders(); // تحديث القائمة
-                closeReminderModal(); // إغلاق النافذة
-                showToast("تم إضافة التذكير");
-            } else {
-                alert("يرجى كتابة نص التذكير");
-            }
-        };
-
-        // 4. جلب التذكيرات (نفس الدالة السابقة لكن للتأكيد)
-        function loadReminders() {
-            const listEl = document.getElementById('reminder-list');
-            if (!listEl) return;
-
-            const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-
-            if (reminders.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;"><i class="far fa-sticky-note" style="font-size:20px; margin-bottom:5px;"></i><p style="font-size:11px; margin:0;">لا توجد تذكيرات</p></div>';
-                return;
-            }
-
-            let html = '';
-            reminders.forEach((text, index) => {
-                html += `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                        <span style="font-size: 13px; line-height: 1.4; width: 85%; word-wrap: break-word;">${text}</span>
-                        <button onclick="deleteReminder(${index})" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 14px; padding: 0 5px; opacity: 0.8; transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            listEl.innerHTML = html;
-        }
-
-        // 5. حذف تذكير (مع رسالة تأكيد المتصفح العادية للسرعة، أو يمكن تحويلها أيضاً)
-        window.deleteReminder = (index) => {
-            if (confirm("حذف هذا التذكير؟")) {
-                const reminders = JSON.parse(localStorage.getItem('my_reminders') || '[]');
-                reminders.splice(index, 1);
-                localStorage.setItem('my_reminders', JSON.stringify(reminders));
-                loadReminders();
-            }
-        };
+        
+        // Start Authentication Check
+        // No manual initAuth call needed here as onAuthStateChanged handles the flow
     </script>
 </body>
 </html>
-
-
-
-
-
-
