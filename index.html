@@ -307,24 +307,33 @@
                 <div id="view-overtime" class="hidden" style="grid-column: 1 / -1;">
                     <div class="card">
                         <h3><i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i> تقرير العمل الإضافي</h3>
-                        <div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-                            <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
-                                <label>من تاريخ</label>
-                                <input type="date" id="overtime-from" onchange="previewOvertimeData()" style="background: white;">
-                            </div>
-                            <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
-                                <label>إلى تاريخ</label>
-                                <input type="date" id="overtime-to" onchange="previewOvertimeData()" style="background: white;">
-                            </div>
-                            <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: center;">
-                                 <div style="background: #e1f5fe; color: #0288d1; padding: 10px 20px; border-radius: 12px; width: 100%; text-align: center;">
-                                     إجمالي الفترة: <span id="total-month-hours" style="font-weight: 800; font-size: 18px;">0</span> ساعة
-                                 </div>
-                            </div>
-                            <button onclick="downloadOvertimeCSV()" class="btn-main" style="height: 52px; background: #27ae60; min-width: 160px;">
-                                <i class="fas fa-file-excel"></i> تحميل إكسل
+                       <div style="background: var(--bg-main); padding: 25px; border-radius: 20px; display: flex; align-items: flex-end; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+                    
+                    <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                        <label>من تاريخ</label>
+                        <input type="date" id="overtime-from" style="background: white;">
+                    </div>
+
+                    <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                        <label>إلى تاريخ</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="date" id="overtime-to" style="background: white; flex:1">
+                            <button onclick="previewOvertimeData()" class="btn-main" style="padding: 0 20px; border-radius: 15px; min-width: 60px;" title="بحث">
+                                <i class="fas fa-search"></i>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: center;">
+                         <div style="background: #e1f5fe; color: #0288d1; padding: 10px 20px; border-radius: 12px; width: 100%; text-align: center;">
+                             إجمالي الفترة: <span id="total-month-hours" style="font-weight: 800; font-size: 18px;">0</span> ساعة
+                         </div>
+                    </div>
+
+                    <button onclick="downloadOvertimeCSV()" class="btn-main" style="height: 52px; background: #27ae60; min-width: 160px;">
+                        <i class="fas fa-file-excel"></i> تحميل إكسل
+                    </button>
+                </div>
                         <h4 style="margin-bottom: 15px; color: var(--text-muted);">معاينة البيانات</h4>
                         <table class="data-table">
                             <thead><tr><th>التاريخ</th><th>الموظف</th><th>القسم</th><th>عدد الساعات</th><th>السبب</th></tr></thead>
@@ -1198,4 +1207,5 @@
     </script>
 </body>
 </html>
+
 
