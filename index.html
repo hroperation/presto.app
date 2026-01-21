@@ -75,6 +75,25 @@
         .stat-box h4 { margin: 0; font-size: 14px; color: var(--text-muted); font-weight: 400; }
         .stat-box .val { font-size: 32px; font-weight: 800; margin-top: 8px; font-family: 'Inter', sans-serif; color: var(--text-main); }
 
+        /* اجعل الصندوق يبدو كزر عند تمرير الماوس */
+.stat-box {
+    /* الخصائص القديمة موجودة... أضف هذه السطور: */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+/* تأثير عند تمرير الماوس */
+.stat-box:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+    background: linear-gradient(to bottom right, var(--bg-card), #fff5f2);
+}
+
+/* تأثير عند الضغط */
+.stat-box:active {
+    transform: scale(0.98);
+}
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table th { text-align: right; padding: 18px; border-bottom: 2px solid var(--bg-main); color: var(--text-muted); font-size: 13px; font-weight: 600; }
         .data-table td { padding: 15px 18px; border-bottom: 1px solid var(--bg-main); font-size: 14px; }
@@ -242,9 +261,23 @@
                 <div id="view-home">
                     <div class="stats-row">
                         <div class="stat-box"><h4>إجمالي الموظفين</h4><div class="val" id="count-home">0</div></div>
-                        <div class="stat-box"><h4>المتواجدين الآن</h4><div class="val" id="online-count">0</div></div>
-                        <div class="stat-box"><h4>طلبات الأذونات</h4><div class="val" id="today-permissions">0</div></div>
-                        <div class="stat-box"><h4>طلبات الإجازة</h4><div class="val" id="today-leaves">0</div></div>
+                        <div class="stat-box" onclick="document.querySelector('.schedule-table').scrollIntoView({behavior: 'smooth'})">
+        <h4>المتواجدين الآن</h4>
+        <div class="val" id="online-count">0</div>
+        <i class="fas fa-eye" style="font-size:12px; color:var(--success); margin-top:5px; opacity:0.7"></i>
+    </div>
+
+    <div class="stat-box" onclick="showTodayDetails('permissions', 'طلبات الأذونات اليوم')">
+        <h4>طلبات الأذونات</h4>
+        <div class="val" id="today-permissions">0</div>
+        <i class="fas fa-list" style="font-size:12px; color:var(--info); margin-top:5px; opacity:0.7"></i>
+    </div>
+
+    <div class="stat-box" onclick="showTodayDetails('leaves', 'طلبات الإجازة اليوم')">
+        <h4>طلبات الإجازة</h4>
+        <div class="val" id="today-leaves">0</div>
+        <i class="fas fa-list" style="font-size:12px; color:var(--warning); margin-top:5px; opacity:0.7"></i>
+    </div>
                     </div>
                     <div class="card">
                         <h3><i class="far fa-calendar-alt" style="color: var(--primary);"></i> الجدول الزمني للإسبوع</h3>
@@ -1390,9 +1423,84 @@
             link.click(); 
             document.body.removeChild(link);
         };
+        // دالة جديدة لعرض تفاصيل طلبات اليوم في نافذة منبثقة
+        window.showTodayDetails = async (collectionName, title) => {
+            const modal = document.getElementById('actionModal');
+            const modalTitle = document.getElementById('action-modal-title');
+            const modalBody = document.getElementById('action-modal-body');
+            const btnSave = document.getElementById('btn-action-save');
+
+            // إعداد النافذة
+            modalTitle.innerText = title;
+            btnSave.style.display = 'none'; // إخفاء زر الحفظ لأننا نعرض بيانات فقط
+            modalBody.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
+            modal.style.display = 'flex';
+
+            try {
+                // تحديد تاريخ اليوم
+                const now = new Date();
+                const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+                // جلب البيانات من قاعدة البيانات
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+                const q = query(colRef, where('date', '==', todayStr));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    modalBody.innerHTML = `
+                        <div style="text-align:center; padding:30px;">
+                            <i class="far fa-smile" style="font-size:40px; color:#ddd; margin-bottom:15px;"></i>
+                            <p style="color:var(--text-muted);">لا توجد طلبات مسجلة لهذا اليوم</p>
+                        </div>`;
+                    return;
+                }
+
+                // بناء القائمة
+                let listHtml = '<div style="display:flex; flex-direction:column; gap:10px;">';
+                
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const emp = allEmployees.find(e => e.id === data.empDocId);
+                    const empName = emp ? emp.name : 'موظف محدوف';
+                    const detail = data.hours ? `${data.hours} ساعات` : (data.type || '---');
+                    
+                    listHtml += `
+                        <div style="background:var(--bg-main); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="width:35px; height:35px; background:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--primary);">
+                                    ${empName.charAt(0)}
+                                </div>
+                                <div>
+                                    <div style="font-weight:bold; font-size:13px;">${empName}</div>
+                                    <div style="font-size:11px; color:var(--text-muted);">${detail}</div>
+                                </div>
+                            </div>
+                            <span class="status-badge" style="background:#e3f2fd; color:#2196f3;">جديد</span>
+                        </div>
+                    `;
+                });
+                
+                listHtml += '</div>';
+                modalBody.innerHTML = listHtml;
+
+            } catch (error) {
+                console.error(error);
+                modalBody.innerHTML = '<p style="color:red; text-align:center;">حدث خطأ أثناء جلب البيانات</p>';
+            }
+        };
+
+        // دالة لإعادة إظهار زر الحفظ عند إغلاق النافذة (لضمان عدم اختفائه في أماكن أخرى)
+        const oldCloseActionModal = window.closeActionModal;
+        window.closeActionModal = () => {
+             document.getElementById('btn-action-save').style.display = 'flex';
+             oldCloseActionModal();
+        };
     </script>
 </body>
 </html>
+
+
+
 
 
 
