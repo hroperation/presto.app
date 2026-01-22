@@ -768,75 +768,83 @@
 
         window.filterEmployees = () => updateUI();
 
-        async function updateDashboardStats() {
+     async function updateDashboardStats() {
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`; // تاريخ اليوم نصياً للمقارنة
+            now.setHours(0, 0, 0, 0); // توحيد الوقت للمقارنة الصحيحة
 
+            // --- 1. حساب طلبات الإجازة (المنطق المصحح) ---
+            // نستخدم allLeavesGlobal المحملة مسبقاً لحساب الإجازات السارية اليوم
+            let activeLeavesCount = 0;
+            
+            if (typeof allLeavesGlobal !== 'undefined') {
+                activeLeavesCount = allLeavesGlobal.filter(leave => {
+                    // تحويل تاريخ بداية الإجازة
+                    const startDate = new Date(leave.date);
+                    startDate.setHours(0, 0, 0, 0);
+
+                    // حساب تاريخ نهاية الإجازة
+                    const duration = parseFloat(leave.daysCount || 1);
+                    const endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + (duration - 1));
+
+                    // الشرط: هل تاريخ اليوم يقع بين البداية والنهاية؟
+                    return now >= startDate && now <= endDate;
+                }).length;
+            }
+
+            const leavesEl = document.getElementById('today-leaves');
+            if (leavesEl) leavesEl.innerText = activeLeavesCount;
+
+            // --- 2. حساب طلبات الأذونات (كما هي - لأنها بالساعات في نفس اليوم) ---
             try {
-                // --- الجزء الأول: جلب إحصائيات الطلبات (كما هو سابقاً) ---
-                const leavesRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
-                const leavesSnap = await getDocs(query(leavesRef, where('date', '==', todayStr)));
-                const leavesEl = document.getElementById('today-leaves');
-                if (leavesEl) leavesEl.innerText = leavesSnap.size;
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
 
                 const permsRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
                 const permsSnap = await getDocs(query(permsRef, where('date', '==', todayStr)));
                 const permsEl = document.getElementById('today-permissions');
                 if (permsEl) permsEl.innerText = permsSnap.size;
 
+            } catch (error) { console.error("Stats Error (Permissions):", error); }
 
-                // --- الجزء الثاني المعدل: حساب المتواجدين الآن ---
 
-                // 1. تحديد قائمة الموظفين المجازين "اليوم"
-                const absentEmpIds = new Set(); // نستخدم Set لتخزين المعرفات بدون تكرار
-                
-                if (typeof allLeavesGlobal !== 'undefined') {
-                    const todayDateObj = new Date(todayStr);
-                    todayDateObj.setHours(0,0,0,0); // تصفير الوقت للمقارنة الصحيحة
+            // --- 3. حساب المتواجدين الآن ---
+            // (تم تحديث هذا الجزء ليعتمد على الحساب الصحيح للإجازات أعلاه)
+            
+            // تحديد قائمة الموظفين المجازين "اليوم" بناءً على الحساب الصحيح
+            const absentEmpIds = new Set();
+            if (typeof allLeavesGlobal !== 'undefined') {
+                allLeavesGlobal.forEach(leave => {
+                    const startDate = new Date(leave.date);
+                    startDate.setHours(0,0,0,0);
+                    const duration = parseFloat(leave.daysCount || 1);
+                    const endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + (duration - 1));
 
-                    allLeavesGlobal.forEach(leave => {
-                        // تحويل تاريخ الإجازة لكائن Date
-                        const startDate = new Date(leave.date);
-                        startDate.setHours(0,0,0,0);
-
-                        // حساب تاريخ نهاية الإجازة
-                        const duration = parseFloat(leave.daysCount || 1);
-                        const endDate = new Date(startDate);
-                        endDate.setDate(endDate.getDate() + (duration - 1));
-
-                        // هل تاريخ اليوم يقع ضمن فترة الإجازة؟
-                        if (todayDateObj >= startDate && todayDateObj <= endDate) {
-                            absentEmpIds.add(leave.empDocId);
-                        }
-                    });
-                }
-
-                // 2. حساب العداد بناءً على الجدول + الإجازات
-                const currentDayIndex = now.getDay(); 
-                const arabicDay = days[currentDayIndex];
-                let onlineCount = 0;
-
-                allEmployees.forEach(emp => {
-                    // الشرط: 
-                    // 1. لديه دوام اليوم
-                    // 2. دوامه ليس "عطلة"
-                    // 3. (الجديد) ليس مسجلاً في قائمة المجازين اليوم
-                    if (emp.schedule && 
-                        emp.schedule[arabicDay] && 
-                        emp.schedule[arabicDay] !== 'عطلة' && 
-                        !absentEmpIds.has(emp.id)) {
-                        
-                        onlineCount++;
+                    if (now >= startDate && now <= endDate) {
+                        absentEmpIds.add(leave.empDocId);
                     }
                 });
+            }
 
-                const onlineEl = document.getElementById('online-count');
-                if (onlineEl) onlineEl.innerText = onlineCount;
+            const currentDayIndex = now.getDay(); 
+            const arabicDay = days[currentDayIndex];
+            let onlineCount = 0;
 
-            } catch (error) { console.error("Stats Error:", error); }
+            allEmployees.forEach(emp => {
+                if (emp.schedule && 
+                    emp.schedule[arabicDay] && 
+                    emp.schedule[arabicDay] !== 'عطلة' && 
+                    !absentEmpIds.has(emp.id)) { // التحقق من أن الموظف ليس في القائمة الصحيحة للمجازين
+                    
+                    onlineCount++;
+                }
+            });
+
+            const onlineEl = document.getElementById('online-count');
+            if (onlineEl) onlineEl.innerText = onlineCount;
         }
 
         function updateBirthdayList() {
@@ -1540,6 +1548,7 @@
     </script>
 </body>
 </html>
+
 
 
 
