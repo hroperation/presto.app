@@ -1474,6 +1474,7 @@
             document.body.removeChild(link);
         };
         // دالة جديدة لعرض تفاصيل طلبات اليوم في نافذة منبثقة
+     // دالة عرض التفاصيل المصححة
         window.showTodayDetails = async (collectionName, title) => {
             const modal = document.getElementById('actionModal');
             const modalTitle = document.getElementById('action-modal-title');
@@ -1482,21 +1483,44 @@
 
             // إعداد النافذة
             modalTitle.innerText = title;
-            btnSave.style.display = 'none'; // إخفاء زر الحفظ لأننا نعرض بيانات فقط
+            btnSave.style.display = 'none'; 
             modalBody.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
             modal.style.display = 'flex';
 
             try {
-                // تحديد تاريخ اليوم
                 const now = new Date();
-                const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+                now.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة
+                const todayStr = now.toISOString().split('T')[0];
+                
+                let itemsToShow = [];
 
-                // جلب البيانات من قاعدة البيانات
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
-                const q = query(colRef, where('date', '==', todayStr));
-                const snap = await getDocs(q);
+                // --- 1. إذا كان الطلب للإجازات (نستخدم المصفوفة الشاملة لفحص المدة) ---
+                if (collectionName === 'leaves') {
+                    if (typeof allLeavesGlobal !== 'undefined') {
+                        itemsToShow = allLeavesGlobal.filter(leave => {
+                            const startDate = new Date(leave.date);
+                            startDate.setHours(0, 0, 0, 0);
 
-                if (snap.empty) {
+                            const duration = parseFloat(leave.daysCount || 1);
+                            const endDate = new Date(startDate);
+                            endDate.setDate(endDate.getDate() + (duration - 1));
+
+                            // هل تاريخ اليوم يقع ضمن فترة الإجازة؟
+                            return now >= startDate && now <= endDate;
+                        });
+                    }
+                } 
+                // --- 2. إذا كان للأذونات (Permissions) أو غيرها (يبقى كما هو تاريخ اليوم) ---
+                else {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+                    // للأذونات نبحث عن تطابق التاريخ فقط
+                    const q = query(colRef, where('date', '==', todayStr));
+                    const snap = await getDocs(q);
+                    snap.forEach(doc => itemsToShow.push(doc.data()));
+                }
+
+                // --- 3. عرض النتائج ---
+                if (itemsToShow.length === 0) {
                     modalBody.innerHTML = `
                         <div style="text-align:center; padding:30px;">
                             <i class="far fa-smile" style="font-size:40px; color:#ddd; margin-bottom:15px;"></i>
@@ -1505,14 +1529,23 @@
                     return;
                 }
 
-                // بناء القائمة
                 let listHtml = '<div style="display:flex; flex-direction:column; gap:10px;">';
                 
-                snap.forEach(doc => {
-                    const data = doc.data();
+                itemsToShow.forEach(data => {
                     const emp = allEmployees.find(e => e.id === data.empDocId);
-                    const empName = emp ? emp.name : 'موظف محدوف';
-                    const detail = data.hours ? `${data.hours} ساعات` : (data.type || '---');
+                    const empName = emp ? emp.name : 'موظف محذوف';
+                    
+                    // تنسيق التفاصيل حسب النوع
+                    let detail = "";
+                    if (data.hours) {
+                        detail = `${data.hours} ساعات`; // للأذونات
+                    } else {
+                        // للإجازات: عرض النوع + تاريخ النهاية إذا كانت ممتدة
+                        const endDate = new Date(data.date);
+                        endDate.setDate(endDate.getDate() + (parseFloat(data.daysCount || 1) - 1));
+                        const endStr = endDate.toISOString().split('T')[0];
+                        detail = `${data.type} (حتى ${endStr})`;
+                    }
                     
                     listHtml += `
                         <div style="background:var(--bg-main); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
@@ -1525,7 +1558,7 @@
                                     <div style="font-size:11px; color:var(--text-muted);">${detail}</div>
                                 </div>
                             </div>
-                            <span class="status-badge" style="background:#e3f2fd; color:#2196f3;">جديد</span>
+                            <span class="status-badge" style="background:#e3f2fd; color:#2196f3;">نشط</span>
                         </div>
                     `;
                 });
@@ -1548,6 +1581,7 @@
     </script>
 </body>
 </html>
+
 
 
 
