@@ -570,6 +570,7 @@
         let allLeavesGlobal = []; 
         let unsubscribeSnapshot = null;
         let unsubscribeLeaves = null;
+        let unsubscribePermissions = null;
 
         onAuthStateChanged(auth, (user) => {
             const loadingScreen = document.getElementById('loading-screen');
@@ -648,6 +649,28 @@
                 snap.forEach(docSnap => allLeavesGlobal.push(docSnap.data()));
                 updateWeeklyLeavesTable();
                 updateDashboardStats();
+            });
+            const permsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
+            unsubscribePermissions = onSnapshot(query(permsColRef), (snap) => {
+                const now = new Date();
+                // توحيد صيغة التاريخ (YYYY-MM-DD) لمطابقة قاعدة البيانات
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
+                let count = 0;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    // نتحقق من أن تاريخ الإذن يطابق تاريخ اليوم
+                    if (data.date === todayStr) {
+                        count++;
+                    }
+                });
+
+                // تحديث العداد في الصفحة
+                const el = document.getElementById('today-permissions');
+                if (el) el.innerText = count;
             });
         }
 
@@ -794,20 +817,6 @@
 
             const leavesEl = document.getElementById('today-leaves');
             if (leavesEl) leavesEl.innerText = activeLeavesCount;
-
-            // --- 2. حساب طلبات الأذونات (كما هي - لأنها بالساعات في نفس اليوم) ---
-            try {
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
-
-                const permsRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
-                const permsSnap = await getDocs(query(permsRef, where('date', '==', todayStr)));
-                const permsEl = document.getElementById('today-permissions');
-                if (permsEl) permsEl.innerText = permsSnap.size;
-
-            } catch (error) { console.error("Stats Error (Permissions):", error); }
 
 
             // --- 3. حساب المتواجدين الآن ---
@@ -1581,6 +1590,7 @@
     </script>
 </body>
 </html>
+
 
 
 
