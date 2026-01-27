@@ -1497,10 +1497,16 @@
             modal.style.display = 'flex';
 
             try {
-                const now = new Date();
-                now.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة
-                const todayStr = now.toISOString().split('T')[0];
+               const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`; // صيغة YYYY-MM-DD محلية
                 
+                // متغير خاص لحساب الإجازات (تصفير الوقت)
+                const checkDate = new Date();
+                checkDate.setHours(0, 0, 0, 0);
+
                 let itemsToShow = [];
 
                 // --- 1. إذا كان الطلب للإجازات (نستخدم المصفوفة الشاملة لفحص المدة) ---
@@ -1590,6 +1596,7 @@
     </script>
 </body>
 </html>
+
 
 
 
