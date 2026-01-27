@@ -629,53 +629,45 @@
             }
         };
 
-   function startListening() {
+        function startListening() {
             if (!currentUser) return;
-
-            // 1. مراقبة الموظفين
             const empColRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
             unsubscribeSnapshot = onSnapshot(query(empColRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
-                
-                // تحديث البروفايل إذا كان مفتوحاً
                 const profileView = document.getElementById('view-profile');
-                if (profileView && !profileView.classList.contains('hidden')) {
+                if (!profileView.classList.contains('hidden')) {
                    const activeId = document.getElementById('edit-doc-id').value;
                    if(activeId) viewProfile(activeId);
                 }
             });
 
-            // 2. مراقبة الإجازات
             const leavesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
             unsubscribeLeaves = onSnapshot(query(leavesColRef), (snap) => {
                 allLeavesGlobal = [];
                 snap.forEach(docSnap => allLeavesGlobal.push(docSnap.data()));
                 updateWeeklyLeavesTable();
-                updateDashboardStats(); 
+                updateDashboardStats();
             });
-
-            // 3. مراقبة الأذونات (باستخدام الفلترة المباشرة لمطابقة النافذة المنبثقة)
             const permsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
-            
-            // تحديد تاريخ اليوم
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            unsubscribePermissions = onSnapshot(query(permsColRef), (snap) => {
+                const now = new Date();
+                // توحيد صيغة التاريخ (YYYY-MM-DD) لمطابقة قاعدة البيانات
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
 
-            // الفلترة باستخدام where (نفس منطق النافذة المنبثقة)
-            const qPermissions = query(permsColRef, where('date', '==', todayStr));
+                let count = 0;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    // نتحقق من أن تاريخ الإذن يطابق تاريخ اليوم
+                    if (data.date === todayStr) {
+                        count++;
+                    }
+                });
 
-            unsubscribePermissions = onSnapshot(qPermissions, (snap) => {
-                // snap.size تعطينا العدد الدقيق للسجلات المطابقة
-                const count = snap.size;
-                const el = document.getElementById('today-permissions');
-                if (el) el.innerText = count;
-            });
-        }
                 // تحديث العداد في الصفحة
                 const el = document.getElementById('today-permissions');
                 if (el) el.innerText = count;
@@ -799,21 +791,26 @@
 
         window.filterEmployees = () => updateUI();
 
-async function updateDashboardStats() {
+     async function updateDashboardStats() {
             const now = new Date();
-            now.setHours(0, 0, 0, 0); 
+            now.setHours(0, 0, 0, 0); // توحيد الوقت للمقارنة الصحيحة
 
-            // --- 1. حساب طلبات الإجازة ---
+            // --- 1. حساب طلبات الإجازة (المنطق المصحح) ---
+            // نستخدم allLeavesGlobal المحملة مسبقاً لحساب الإجازات السارية اليوم
             let activeLeavesCount = 0;
+            
             if (typeof allLeavesGlobal !== 'undefined') {
                 activeLeavesCount = allLeavesGlobal.filter(leave => {
+                    // تحويل تاريخ بداية الإجازة
                     const startDate = new Date(leave.date);
                     startDate.setHours(0, 0, 0, 0);
 
+                    // حساب تاريخ نهاية الإجازة
                     const duration = parseFloat(leave.daysCount || 1);
                     const endDate = new Date(startDate);
                     endDate.setDate(endDate.getDate() + (duration - 1));
 
+                    // الشرط: هل تاريخ اليوم يقع بين البداية والنهاية؟
                     return now >= startDate && now <= endDate;
                 }).length;
             }
@@ -821,9 +818,11 @@ async function updateDashboardStats() {
             const leavesEl = document.getElementById('today-leaves');
             if (leavesEl) leavesEl.innerText = activeLeavesCount;
 
-            // (تم نقل حساب الأذونات إلى startListening ليكون فورياً ودقيقاً)
 
-            // --- 2. حساب المتواجدين الآن ---
+            // --- 3. حساب المتواجدين الآن ---
+            // (تم تحديث هذا الجزء ليعتمد على الحساب الصحيح للإجازات أعلاه)
+            
+            // تحديد قائمة الموظفين المجازين "اليوم" بناءً على الحساب الصحيح
             const absentEmpIds = new Set();
             if (typeof allLeavesGlobal !== 'undefined') {
                 allLeavesGlobal.forEach(leave => {
@@ -847,7 +846,7 @@ async function updateDashboardStats() {
                 if (emp.schedule && 
                     emp.schedule[arabicDay] && 
                     emp.schedule[arabicDay] !== 'عطلة' && 
-                    !absentEmpIds.has(emp.id)) {
+                    !absentEmpIds.has(emp.id)) { // التحقق من أن الموظف ليس في القائمة الصحيحة للمجازين
                     
                     onlineCount++;
                 }
@@ -855,7 +854,7 @@ async function updateDashboardStats() {
 
             const onlineEl = document.getElementById('online-count');
             if (onlineEl) onlineEl.innerText = onlineCount;
-        }}
+        }
 
         function updateBirthdayList() {
             const listEl = document.getElementById('birthday-list');
@@ -1591,9 +1590,6 @@ async function updateDashboardStats() {
     </script>
 </body>
 </html>
-
-
-
 
 
 
