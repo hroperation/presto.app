@@ -658,15 +658,15 @@
                 const month = String(now.getMonth() + 1).padStart(2, '0');
                 const day = String(now.getDate()).padStart(2, '0');
                 const todayStr = `${year}-${month}-${day}`;
+const qPermissions = query(permsColRef, where('date', '==', todayStr));
 
-                let count = 0;
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    // نتحقق من أن تاريخ الإذن يطابق تاريخ اليوم
-                    if (data.date === todayStr) {
-                        count++;
-                    }
-                });
+            unsubscribePermissions = onSnapshot(qPermissions, (snap) => {
+                // snap.size يعطينا العدد الدقيق للسجلات المطابقة للاستعلام
+                const count = snap.size;
+                const el = document.getElementById('today-permissions');
+                if (el) el.innerText = count;
+            });
+        }
 
                 // تحديث العداد في الصفحة
                 const el = document.getElementById('today-permissions');
@@ -1590,6 +1590,7 @@
     </script>
 </body>
 </html>
+
 
 
 
