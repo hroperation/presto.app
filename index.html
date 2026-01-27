@@ -629,45 +629,53 @@
             }
         };
 
-        function startListening() {
+   function startListening() {
             if (!currentUser) return;
+
+            // 1. مراقبة الموظفين
             const empColRef = collection(db, 'artifacts', appId, 'public', 'data', 'employees_v7');
             unsubscribeSnapshot = onSnapshot(query(empColRef), (snap) => {
                 allEmployees = [];
                 snap.forEach(docSnap => allEmployees.push({ id: docSnap.id, ...docSnap.data() }));
                 updateUI();
+                
+                // تحديث البروفايل إذا كان مفتوحاً
                 const profileView = document.getElementById('view-profile');
-                if (!profileView.classList.contains('hidden')) {
+                if (profileView && !profileView.classList.contains('hidden')) {
                    const activeId = document.getElementById('edit-doc-id').value;
                    if(activeId) viewProfile(activeId);
                 }
             });
 
+            // 2. مراقبة الإجازات
             const leavesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaves');
             unsubscribeLeaves = onSnapshot(query(leavesColRef), (snap) => {
                 allLeavesGlobal = [];
                 snap.forEach(docSnap => allLeavesGlobal.push(docSnap.data()));
                 updateWeeklyLeavesTable();
-                updateDashboardStats();
+                updateDashboardStats(); 
             });
+
+            // 3. مراقبة الأذونات (باستخدام الفلترة المباشرة لمطابقة النافذة المنبثقة)
             const permsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'permissions');
-            unsubscribePermissions = onSnapshot(query(permsColRef), (snap) => {
-                const now = new Date();
-                // توحيد صيغة التاريخ (YYYY-MM-DD) لمطابقة قاعدة البيانات
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
-const qPermissions = query(permsColRef, where('date', '==', todayStr));
+            
+            // تحديد تاريخ اليوم
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            // الفلترة باستخدام where (نفس منطق النافذة المنبثقة)
+            const qPermissions = query(permsColRef, where('date', '==', todayStr));
 
             unsubscribePermissions = onSnapshot(qPermissions, (snap) => {
-                // snap.size يعطينا العدد الدقيق للسجلات المطابقة للاستعلام
+                // snap.size تعطينا العدد الدقيق للسجلات المطابقة
                 const count = snap.size;
                 const el = document.getElementById('today-permissions');
                 if (el) el.innerText = count;
             });
         }
-
                 // تحديث العداد في الصفحة
                 const el = document.getElementById('today-permissions');
                 if (el) el.innerText = count;
@@ -1590,6 +1598,7 @@ const qPermissions = query(permsColRef, where('date', '==', todayStr));
     </script>
 </body>
 </html>
+
 
 
 
