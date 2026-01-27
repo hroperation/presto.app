@@ -1498,16 +1498,14 @@
 
             try {
                const now = new Date();
+                checkDate.setHours(0, 0, 0, 0);
                 const year = now.getFullYear();
                 const month = String(now.getMonth() + 1).padStart(2, '0');
                 const day = String(now.getDate()).padStart(2, '0');
                 const todayStr = `${year}-${month}-${day}`; // صيغة YYYY-MM-DD محلية
-                
-                // متغير خاص لحساب الإجازات (تصفير الوقت)
-                const checkDate = new Date();
-                checkDate.setHours(0, 0, 0, 0);
+               let itemsToShow = [];
 
-                let itemsToShow = [];
+            
 
                 // --- 1. إذا كان الطلب للإجازات (نستخدم المصفوفة الشاملة لفحص المدة) ---
                 if (collectionName === 'leaves') {
@@ -1519,7 +1517,7 @@
                             const duration = parseFloat(leave.daysCount || 1);
                             const endDate = new Date(startDate);
                             endDate.setDate(endDate.getDate() + (duration - 1));
-
+                            endDate.setHours(23, 59, 59, 999);
                             // هل تاريخ اليوم يقع ضمن فترة الإجازة؟
                             return now >= startDate && now <= endDate;
                         });
@@ -1596,6 +1594,7 @@
     </script>
 </body>
 </html>
+
 
 
 
