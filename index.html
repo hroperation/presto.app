@@ -1484,6 +1484,7 @@
         };
         // دالة جديدة لعرض تفاصيل طلبات اليوم في نافذة منبثقة
      // دالة عرض التفاصيل المصححة
+       // دالة عرض التفاصيل (النسخة النهائية والمصححة)
         window.showTodayDetails = async (collectionName, title) => {
             const modal = document.getElementById('actionModal');
             const modalTitle = document.getElementById('action-modal-title');
@@ -1497,42 +1498,50 @@
             modal.style.display = 'flex';
 
             try {
-               const now = new Date();
+                // 1. إعداد تاريخ اليوم (محلياً) وتصفير الوقت تماماً
+                const checkDate = new Date();
                 checkDate.setHours(0, 0, 0, 0);
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`; // صيغة YYYY-MM-DD محلية
-               let itemsToShow = [];
 
-            
+                // 2. إعداد النص (String) الخاص بتاريخ اليوم للبحث في قاعدة البيانات
+                // نستخدم هذه الطريقة اليدوية لضمان عدم تأثر التاريخ بفارق التوقيت العالمي (UTC)
+                const year = checkDate.getFullYear();
+                const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+                const day = String(checkDate.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`; 
+                
+                let itemsToShow = [];
 
-                // --- 1. إذا كان الطلب للإجازات (نستخدم المصفوفة الشاملة لفحص المدة) ---
+                // --- أ. حالة الإجازات (تعتمد على النطاق الزمني) ---
                 if (collectionName === 'leaves') {
                     if (typeof allLeavesGlobal !== 'undefined') {
                         itemsToShow = allLeavesGlobal.filter(leave => {
+                            // تحويل تاريخ بداية الإجازة
                             const startDate = new Date(leave.date);
+                            // هام جداً: تصفير وقت البداية لضمان المقارنة العادلة مع تاريخ اليوم
                             startDate.setHours(0, 0, 0, 0);
 
+                            // حساب تاريخ النهاية
                             const duration = parseFloat(leave.daysCount || 1);
                             const endDate = new Date(startDate);
                             endDate.setDate(endDate.getDate() + (duration - 1));
+                            // جعل وقت النهاية آخر لحظة في اليوم
                             endDate.setHours(23, 59, 59, 999);
-                            // هل تاريخ اليوم يقع ضمن فترة الإجازة؟
-                            return now >= startDate && now <= endDate;
+
+                            // المقارنة: هل "اليوم" يقع بين البداية والنهاية؟
+                            return checkDate >= startDate && checkDate <= endDate;
                         });
                     }
                 } 
-                // --- 2. إذا كان للأذونات (Permissions) أو غيرها (يبقى كما هو تاريخ اليوم) ---
+                // --- ب. حالة الأذونات (تعتمد على تطابق النص todayStr) ---
                 else {
                     const colRef = collection(db, 'artifacts', appId, 'public', 'data', collectionName);
-                    // للأذونات نبحث عن تطابق التاريخ فقط
+                    // استخدام todayStr المحلي الذي قمنا بحسابه بالأعلى
                     const q = query(colRef, where('date', '==', todayStr));
                     const snap = await getDocs(q);
                     snap.forEach(doc => itemsToShow.push(doc.data()));
                 }
 
-                // --- 3. عرض النتائج ---
+                // --- عرض النتائج ---
                 if (itemsToShow.length === 0) {
                     modalBody.innerHTML = `
                         <div style="text-align:center; padding:30px;">
@@ -1548,12 +1557,11 @@
                     const emp = allEmployees.find(e => e.id === data.empDocId);
                     const empName = emp ? emp.name : 'موظف محذوف';
                     
-                    // تنسيق التفاصيل حسب النوع
                     let detail = "";
                     if (data.hours) {
                         detail = `${data.hours} ساعات`; // للأذونات
                     } else {
-                        // للإجازات: عرض النوع + تاريخ النهاية إذا كانت ممتدة
+                        // للإجازات
                         const endDate = new Date(data.date);
                         endDate.setDate(endDate.getDate() + (parseFloat(data.daysCount || 1) - 1));
                         const endStr = endDate.toISOString().split('T')[0];
@@ -1594,6 +1602,7 @@
     </script>
 </body>
 </html>
+
 
 
 
