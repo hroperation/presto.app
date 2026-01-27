@@ -799,26 +799,21 @@
 
         window.filterEmployees = () => updateUI();
 
-     async function updateDashboardStats() {
+async function updateDashboardStats() {
             const now = new Date();
-            now.setHours(0, 0, 0, 0); // توحيد الوقت للمقارنة الصحيحة
+            now.setHours(0, 0, 0, 0); 
 
-            // --- 1. حساب طلبات الإجازة (المنطق المصحح) ---
-            // نستخدم allLeavesGlobal المحملة مسبقاً لحساب الإجازات السارية اليوم
+            // --- 1. حساب طلبات الإجازة ---
             let activeLeavesCount = 0;
-            
             if (typeof allLeavesGlobal !== 'undefined') {
                 activeLeavesCount = allLeavesGlobal.filter(leave => {
-                    // تحويل تاريخ بداية الإجازة
                     const startDate = new Date(leave.date);
                     startDate.setHours(0, 0, 0, 0);
 
-                    // حساب تاريخ نهاية الإجازة
                     const duration = parseFloat(leave.daysCount || 1);
                     const endDate = new Date(startDate);
                     endDate.setDate(endDate.getDate() + (duration - 1));
 
-                    // الشرط: هل تاريخ اليوم يقع بين البداية والنهاية؟
                     return now >= startDate && now <= endDate;
                 }).length;
             }
@@ -826,11 +821,9 @@
             const leavesEl = document.getElementById('today-leaves');
             if (leavesEl) leavesEl.innerText = activeLeavesCount;
 
+            // (تم نقل حساب الأذونات إلى startListening ليكون فورياً ودقيقاً)
 
-            // --- 3. حساب المتواجدين الآن ---
-            // (تم تحديث هذا الجزء ليعتمد على الحساب الصحيح للإجازات أعلاه)
-            
-            // تحديد قائمة الموظفين المجازين "اليوم" بناءً على الحساب الصحيح
+            // --- 2. حساب المتواجدين الآن ---
             const absentEmpIds = new Set();
             if (typeof allLeavesGlobal !== 'undefined') {
                 allLeavesGlobal.forEach(leave => {
@@ -854,7 +847,7 @@
                 if (emp.schedule && 
                     emp.schedule[arabicDay] && 
                     emp.schedule[arabicDay] !== 'عطلة' && 
-                    !absentEmpIds.has(emp.id)) { // التحقق من أن الموظف ليس في القائمة الصحيحة للمجازين
+                    !absentEmpIds.has(emp.id)) {
                     
                     onlineCount++;
                 }
@@ -862,7 +855,7 @@
 
             const onlineEl = document.getElementById('online-count');
             if (onlineEl) onlineEl.innerText = onlineCount;
-        }
+        }}
 
         function updateBirthdayList() {
             const listEl = document.getElementById('birthday-list');
@@ -1598,6 +1591,7 @@
     </script>
 </body>
 </html>
+
 
 
 
