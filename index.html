@@ -227,6 +227,7 @@
                 <a onclick="showView('employees')" id="link-employees" class="nav-link"><i class="fas fa-user-friends"></i> <span>الموظفين</span></a>
                 <a onclick="showView('calendar')" id="link-calendar" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>التقويم الشهري</span></a>
                 <a onclick="showView('overtime')" id="link-overtime" class="nav-link"><i class="fas fa-calculator"></i> <span>احتساب الإضافي</span></a>
+                <a onclick="showView('requests')" id="link-requests" class="nav-link" ><i class="fas fa-inbox"></i> <span>طلبات الموظفين</span></a>
             </nav>
 
             <div style="margin-top: auto; width: 100%; padding: 0 10px; margin-bottom: 20px;">
@@ -417,7 +418,25 @@
                         <div id="profile-content"></div>
                     </div>
                 </div>
-
+<div id="view-requests" class="hidden" style="grid-column: 1 / -1;">
+    <div class="card">
+        <h3><i class="fas fa-inbox" style="color: var(--primary);"></i> طلبات الموظفين (المعلقة)</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>الموظف</th>
+                    <th>النوع</th>
+                    <th>التفاصيل</th>
+                    <th>التاريخ</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+                <tr><td colspan="5" style="text-align:center;"><div class="spinner" style="margin:10px auto; width:30px; height:30px; border-width:3px;"></div>جاري التحميل...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
                 <div id="side-widgets" class="side-widgets">
                     <div class="card" style="background: var(--secondary); color: white; min-height: 180px; display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
@@ -606,9 +625,10 @@
         let unsubscribeLeaves = null;
         let unsubscribePermissions = null;
         let allPermissionsGlobal = [];
-        
         let unsubscribeSwaps = null;
         let allSwapsGlobal = [];
+        let unsubscribeRequests = null;
+        let allRequestsGlobal = [];
 
         onAuthStateChanged(auth, (user) => {
             const loadingScreen = document.getElementById('loading-screen');
@@ -744,6 +764,7 @@
                    if(activeId) viewProfile(activeId);
                 }
             });
+           if (typeof listenToRequests === 'function') listenToRequests();
         }
 
         // تم فصل هذه الدالة لتكون خارج startListening (هذا كان سبب المشكلة)
@@ -1650,7 +1671,7 @@
         // الدالة الشاملة والوحيدة للتنقل
         window.showView = (v) => {
             // 1. إخفاء جميع الصفحات وإظهار الصفحة المطلوبة
-            ['home', 'employees', 'profile', 'overtime', 'calendar'].forEach(view => { 
+            ['home', 'employees', 'profile', 'overtime', 'calendar', 'requests'].forEach(view => { 
                 const el = document.getElementById(`view-${view}`); 
                 if (el) el.className = (v === view ? '' : 'hidden'); 
             });
@@ -1673,7 +1694,8 @@
                 'employees': 'سجل الموظفين', 
                 'profile': 'الملف الشخصي', 
                 'overtime': 'احتساب العمل الإضافي', 
-                'calendar': 'التقويم الشهري' 
+                'calendar': 'التقويم الشهري' ,
+                'requests': 'طلبات الموظفين'
             }; 
             if (titleEl) titleEl.innerText = titles[v] || 'Presto HR';
 
@@ -1949,6 +1971,235 @@
             link.click();
             document.body.removeChild(link);
         };
+        // دالة مراقبة الطلبات الجديدة
+window.listenToRequests = () => {
+    const requestsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'requests');
+    unsubscribeRequests = onSnapshot(query(requestsColRef), (snap) => {
+        allRequestsGlobal = [];
+        let pendingCount = 0;
+        
+        snap.forEach(doc => {
+            const data = { id: doc.id, ...doc.data() };
+            allRequestsGlobal.push(data);
+            if (data.status === 'pending') pendingCount++;
+        });
+        
+        // تحديث عداد الإشعارات
+        const badge = document.getElementById('requests-badge');
+        if (badge) {
+            badge.innerText = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
+        
+        updateRequestsTable();
+    });
+};
+
+// دالة عرض الطلبات في الجدول
+window.updateRequestsTable = () => {
+    const tbody = document.getElementById('requestsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    // جلب الطلبات المعلقة فقط (يدعم status و Status)
+    const pendingRequests = allRequestsGlobal.filter(r => r.status === 'pending' || r.Status === 'pending' || r.Status === 'Pending');
+    
+    if (pendingRequests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">لا توجد طلبات معلقة حالياً</td></tr>';
+        return;
+    }
+    
+    pendingRequests.forEach(req => {
+        let empName = req.Employee_Name || 'غير معروف';
+        
+        // جلب الرقم الوظيفي بشكل آمن جداً للتعامل مع أي تنسيق
+        let reqIdRaw = req.empId || req.empID || req.EmpId || req.ID || ''; 
+        let empIdDisplay = reqIdRaw ? String(reqIdRaw).trim() : '---';
+        
+        // البحث عن الموظف (تحويل الأرقام لنصوص لتجنب الأخطاء)
+        const emp = allEmployees.find(e => String(e.empId || '').trim() === empIdDisplay);
+        
+        if (emp) {
+            empName = emp.name;
+            req.empDocId = emp.id; // حفظ المعرف الداخلي
+        }
+        
+        let details = "";
+        let typeBadge = "";
+        const cat = (req.Category || req.type || '').toLowerCase();
+        
+        // تحسين البحث ليشمل الكلمات بالهمزة وبدونها (إجازة/اجازة - إذن/اذن - إضافي/اضافي)
+        if (cat === 'leave' || cat.includes('جاز')) {
+            typeBadge = '<span class="status-badge" style="background:#fff3e0; color:#e65100;">إجازة</span>';
+            details = `<strong>${req.Reason || 'سنوية'}</strong> <br><span style="font-size:11px;">من: ${req.Start_Date || req.date} إلى ${req.End_Date || '---'}</span>`;
+        } 
+        else if (cat === 'permission' || cat.includes('ذن')) {
+            typeBadge = '<span class="status-badge" style="background:#e3f2fd; color:#1976d2;">إذن خروج</span>';
+            details = `<strong>${req.Reason || req.hours || '0'} ساعات</strong> <br><span style="font-size:11px;">تاريخ: ${req.Start_Date || req.date}</span>`;
+        } 
+        else if (cat === 'overtime' || cat.includes('ضاف')) {
+            typeBadge = '<span class="status-badge" style="background:#e8f5e9; color:#2e7d32;">عمل إضافي</span>';
+            details = `<strong>${req.Reason || req.hours || '0'} ساعات</strong> <br><span style="font-size:11px;">تاريخ: ${req.Start_Date || req.date}</span>`;
+        } 
+        else {
+            typeBadge = '<span class="status-badge" style="background:#f3e5f5; color:#7b1fa2;">أخرى</span>';
+            details = `طلب غير مصنف: ${cat}`;
+        }
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>
+                    <div style="font-weight:bold;">${empName}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">${empIdDisplay}</div>
+                </td>
+                <td>${typeBadge}</td>
+                <td>${details}</td>
+                <td>${req.Start_Date || req.date || '---'}</td>
+                <td>
+                    <button onclick="approveRequest('${req.id}')" class="btn-action" style="background:var(--success); color:white;" title="موافقة"><i class="fas fa-check"></i></button>
+                    <button onclick="rejectRequest('${req.id}')" class="btn-action" style="background:var(--danger); color:white;" title="رفض"><i class="fas fa-times"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+};
+
+// دالة الموافقة (اعتماد صارم على الرقم الوظيفي)
+// دالة الموافقة الذكية (تفحص التعارضات وتعتمد على الـ ID)
+// ⚠️ ضع الرابط الذي نسخته من Apps Script بين علامتي التنصيص هنا
+const GOOGLE_SCRIPT_URL = "ضع_الرابط_الخاص_بك_هنا"; 
+
+// دالة مساعدة للاتصال بجوجل شيت خفية
+async function notifyAppSheet(empId, date, status, reason = "") {
+    if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("ضع_الرابط")) return; // تجاهل إذا لم يتم وضع الرابط
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ empId: empId, date: date, status: status, reason: reason })
+        });
+    } catch(e) { console.error("Error notifying AppSheet:", e); }
+}
+
+// 1. دالة إغلاق النافذة
+window.closeActionModal = () => {
+    document.getElementById('actionModal').style.display = 'none';
+    const saveBtn = document.getElementById('btn-action-save');
+    if(saveBtn) {
+        saveBtn.style.background = 'var(--primary)';
+        saveBtn.disabled = false;
+    }
+};
+
+// 2. دالة الموافقة (تقوم بالتسجيل في الموقع + إبلاغ AppSheet)
+window.approveRequest = (id) => {
+    const modal = document.getElementById('actionModal');
+    const title = document.getElementById('action-modal-title');
+    const body = document.getElementById('action-modal-body');
+    const saveBtn = document.getElementById('btn-action-save');
+
+    title.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> تأكيد الموافقة';
+    body.innerHTML = '<p style="font-size: 15px; color: var(--text-muted); font-weight: bold;">هل أنت متأكد من الموافقة على هذا الطلب؟ سيتم إدراجه في النظام وتحديث AppSheet تلقائياً.</p>';
+
+    saveBtn.innerHTML = 'نعم، موافق';
+    saveBtn.style.background = 'var(--success)';
+    saveBtn.style.display = 'flex';
+    modal.style.display = 'flex';
+
+    saveBtn.onclick = async () => {
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
+        saveBtn.disabled = true;
+        
+        const req = allRequestsGlobal.find(r => r.id === id);
+        if (!req) return closeActionModal();
+        
+        let reqEmpIdStr = String(req.empId || req.empID || req.ID || '').trim();
+        let reqDate = req.Start_Date || req.date;
+
+        try {
+            let targetEmpDocId = req.empDocId;
+            if (!targetEmpDocId) {
+                const emp = allEmployees.find(e => String(e.empId || "").trim() === reqEmpIdStr);
+                if (emp) { targetEmpDocId = emp.id; } 
+                else {
+                    closeActionModal();
+                    return alert(`لم يتم العثور على الموظف (${reqEmpIdStr}) في سجل الموظفين.`);
+                }
+            }
+
+            const cat = (req.Category || req.type || '').toLowerCase();
+            
+            // تسجيل البيانات محلياً في الموقع
+            if (cat === 'leave' || cat.includes('جاز')) {
+                let dCount = parseFloat(req.daysCount || 1);
+                if (req.Start_Date && req.End_Date) {
+                    dCount = Math.ceil(Math.abs(new Date(req.End_Date) - new Date(req.Start_Date)) / (1000 * 60 * 60 * 24)) + 1;
+                }
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leaves'), { empDocId: targetEmpDocId, date: reqDate, daysCount: dCount, type: req.Reason || 'سنوية', note: 'موافق عليه', createdAt: serverTimestamp() });
+            } 
+            else if (cat === 'permission' || cat.includes('ذن')) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'permissions'), { empDocId: targetEmpDocId, date: reqDate, hours: parseFloat(req.Reason || req.hours || 0), createdAt: serverTimestamp() });
+            }
+            else if (cat === 'overtime' || cat.includes('ضاف')) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'overtime'), { empDocId: targetEmpDocId, date: reqDate, hours: parseFloat(req.Reason || req.hours || 0), reason: 'موافق عليه', createdAt: serverTimestamp() });
+            }
+            
+            // إخفاء الطلب من الموقع
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'requests', id), { status: 'approved', Status: 'Approved', updatedAt: serverTimestamp() });
+            
+            // 🚀 إرسال التحديث إلى AppSheet!
+            await notifyAppSheet(reqEmpIdStr, reqDate, "Approved");
+
+            closeActionModal(); 
+            showToast("✅ تمت الموافقة وتحديث AppSheet بنجاح!");
+            
+        } catch(e) { 
+            console.error(e); alert("حدث خطأ."); closeActionModal();
+        }
+    };
+};
+
+// 3. دالة الرفض (إبلاغ AppSheet بسبب الرفض)
+window.rejectRequest = (id) => {
+    const modal = document.getElementById('actionModal');
+    const title = document.getElementById('action-modal-title');
+    const body = document.getElementById('action-modal-body');
+    const saveBtn = document.getElementById('btn-action-save');
+
+    title.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger);"></i> تأكيد الرفض';
+    body.innerHTML = `
+        <p style="font-size: 14px; margin-bottom: 15px; color: var(--text-muted);">يرجى توضيح سبب الرفض (سيظهر للموظف في AppSheet):</p>
+        <div class="form-group"><textarea id="reject-reason-input" rows="3" placeholder="مثال: يوجد ضغط عمل..." style="border: 1px solid var(--danger);"></textarea></div>
+    `;
+
+    saveBtn.innerHTML = 'تأكيد الرفض';
+    saveBtn.style.background = 'var(--danger)';
+    saveBtn.style.display = 'flex';
+    modal.style.display = 'flex'; 
+
+    saveBtn.onclick = async () => {
+        const reason = document.getElementById('reject-reason-input').value.trim();
+        if (!reason) return alert("يرجى كتابة سبب الرفض.");
+
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفض...';
+        saveBtn.disabled = true;
+
+        const req = allRequestsGlobal.find(r => r.id === id);
+        let reqEmpIdStr = String(req.empId || req.empID || req.ID || '').trim();
+        let reqDate = req.Start_Date || req.date;
+
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'requests', id), { status: 'rejected', Status: 'Rejected', reject_reason: reason, updatedAt: serverTimestamp() });
+            
+            // 🚀 إرسال التحديث وسبب الرفض إلى AppSheet!
+            await notifyAppSheet(reqEmpIdStr, reqDate, "Rejected", reason);
+
+            closeActionModal();
+            showToast("❌ تم رفض الطلب وتحديث AppSheet.");
+        } catch(e) {
+            console.error(e); alert("حدث خطأ."); closeActionModal();
+        }
+    };
+};
     </script>
 </body>
 </html>
